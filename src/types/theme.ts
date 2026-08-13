@@ -55,6 +55,28 @@ export interface InstalledTheme {
   preview?: string;
 }
 
+/** The user's currently-applied theme (read from live config files). */
+export interface CurrentTheme {
+  widgetStyle: string;
+  colorScheme: string;
+  iconTheme: string;
+  cursorTheme: string;
+  gtkTheme: string;
+  plasmaTheme: string;
+  kvantum: string;
+}
+
+/** Components assembled into a new global theme by the Studio. */
+export interface GlobalThemeSpec {
+  gtk: string;
+  widgetStyle: string;
+  kvantum: string;
+  icons: string;
+  cursors: string;
+  colors: string;
+  plasma: string;
+}
+
 export const INSTALLED_KIND_LABELS: Record<string, string> = {
   global: "Global Themes",
   gtk: "GTK Themes",

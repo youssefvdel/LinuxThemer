@@ -17,7 +17,9 @@ pub fn run() {
             system::list_installed,
             system::save_current_theme,
             system::launch_studio,
-            system::remove_installed
+            system::remove_installed,
+            system::current_theme,
+            system::save_global_theme
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

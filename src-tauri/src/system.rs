@@ -6,7 +6,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize)]
 pub struct InstalledTheme {
@@ -228,6 +228,137 @@ pub fn remove_installed(path: String) -> Result<(), String> {
     } else {
         Err("path does not exist".into())
     }
+}
+
+/// The user's currently-applied theme, read from the live config files.
+#[derive(Serialize)]
+pub struct CurrentTheme {
+    pub widget_style: String,
+    pub color_scheme: String,
+    pub icon_theme: String,
+    pub cursor_theme: String,
+    pub gtk_theme: String,
+    pub plasma_theme: String,
+    pub kvantum: String,
+}
+
+/// Components assembled into a new global theme by the Studio.
+#[derive(Serialize, Deserialize)]
+pub struct GlobalThemeSpec {
+    pub gtk: String,
+    pub widget_style: String,
+    pub kvantum: String,
+    pub icons: String,
+    pub cursors: String,
+    pub colors: String,
+    pub plasma: String,
+}
+
+fn slugify(name: &str) -> String {
+    let joined: String = name
+        .chars()
+        .map(|c| {
+            if c.is_alphanumeric() {
+                c.to_ascii_lowercase()
+            } else {
+                '-'
+            }
+        })
+        .collect::<String>()
+        .split('-')
+        .filter(|p| !p.is_empty())
+        .collect::<Vec<_>>()
+        .join("-");
+    if joined.is_empty() {
+        "custom-theme".to_string()
+    } else {
+        joined
+    }
+}
+
+/// Snapshot the current theme values (Qt style, colors, icons, cursor, GTK,
+/// Plasma desktop theme, Kvantum).
+#[tauri::command]
+pub fn current_theme() -> Result<CurrentTheme, String> {
+    let h = home();
+    let kdeglobals = h.join(".config/kdeglobals");
+    let kcminputrc = h.join(".config/kcminputrc");
+    let gtk3 = h.join(".config/gtk-3.0/settings.ini");
+    let plasmarc = h.join(".config/plasmarc");
+    let kvconfig = h.join(".config/Kvantum/kvantum.kvconfig");
+    Ok(CurrentTheme {
+        widget_style: read_ini(&kdeglobals, "KDE", "widgetStyle")
+            .unwrap_or_else(|| "Breeze".to_string()),
+        color_scheme: read_ini(&kdeglobals, "General", "ColorScheme").unwrap_or_default(),
+        icon_theme: read_ini(&kdeglobals, "Icons", "Theme").unwrap_or_default(),
+        cursor_theme: read_ini(&kcminputrc, "Mouse", "cursorTheme").unwrap_or_default(),
+        gtk_theme: read_ini(&gtk3, "Settings", "gtk-theme-name").unwrap_or_default(),
+        plasma_theme: read_ini(&plasmarc, "Theme", "name").unwrap_or_default(),
+        kvantum: read_ini(&kvconfig, "General", "theme").unwrap_or_default(),
+    })
+}
+
+/// Write a KDE look-and-feel (global theme) package from the assembled spec,
+/// so it appears in System Settings → Global Theme. GTK + Kvantum aren't
+/// settable via look-and-feel defaults, so they're kept in a linuxthemer.json
+/// manifest for the apply engine.
+#[tauri::command]
+pub fn save_global_theme(name: String, spec: GlobalThemeSpec) -> Result<String, String> {
+    let name = name.trim();
+    if name.is_empty() {
+        return Err("theme name is empty".into());
+    }
+    let slug = slugify(name);
+    let dir = home()
+        .join(".local/share/plasma/look-and-feel")
+        .join(&slug);
+    fs::create_dir_all(dir.join("contents")).map_err(|e| e.to_string())?;
+
+    let metadata = format!(
+        "[Desktop Entry]\nEncoding=UTF-8\nName={name}\nComment=Created with LinuxThemer\nType=Service\nX-KDE-ServiceTypes=Plasma/LookAndFeel\nX-KDE-PluginInfo-Author=LinuxThemer\nX-KDE-PluginInfo-Name={slug}\nX-KDE-PluginInfo-Version=1.0\nX-KDE-PluginInfo-Category=Plasma Look And Feel\nX-KDE-PluginInfo-EnabledByDefault=true\n"
+    );
+    fs::write(dir.join("metadata.desktop"), metadata).map_err(|e| e.to_string())?;
+
+    let mut defaults = String::new();
+    if !spec.colors.is_empty() {
+        defaults.push_str(&format!("[kdeglobals][General]\nColorScheme={}\n\n", spec.colors));
+    }
+    if !spec.icons.is_empty() {
+        defaults.push_str(&format!("[kdeglobals][Icons]\nTheme={}\n\n", spec.icons));
+    }
+    if !spec.widget_style.is_empty() {
+        defaults.push_str(&format!(
+            "[kdeglobals][KDE]\nwidgetStyle={}\n\n",
+            spec.widget_style
+        ));
+    }
+    if !spec.cursors.is_empty() {
+        defaults.push_str(&format!(
+            "[kcminputrc][Mouse]\ncursorTheme={}\n\n",
+            spec.cursors
+        ));
+    }
+    if !spec.plasma.is_empty() {
+        defaults.push_str(&format!("[plasmarc][Theme]\nname={}\n\n", spec.plasma));
+    }
+    fs::write(dir.join("contents/defaults"), defaults).map_err(|e| e.to_string())?;
+
+    let manifest = serde_json::json!({
+        "gtk": spec.gtk,
+        "kvantum": spec.kvantum,
+        "widgetStyle": spec.widget_style,
+        "icons": spec.icons,
+        "cursors": spec.cursors,
+        "colors": spec.colors,
+        "plasma": spec.plasma,
+    });
+    fs::write(
+        dir.join("linuxthemer.json"),
+        serde_json::to_string_pretty(&manifest).map_err(|e| e.to_string())?,
+    )
+    .map_err(|e| e.to_string())?;
+
+    Ok(dir.to_string_lossy().to_string())
 }
 
 fn read_ini(path: &Path, section: &str, key: &str) -> Option<String> {

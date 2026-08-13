@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchStore, STORE_CATEGORIES } from "./lib/store";
-import { fetchInstalled, saveCurrentTheme, launchStudio, removeInstalled } from "./lib/installed";
+import { fetchInstalled, saveCurrentTheme, removeInstalled } from "./lib/installed";
 import {
   APPLY_COMPONENTS,
   INSTALLED_KIND_LABELS,
@@ -15,6 +15,7 @@ import { ThemeGrid } from "./components/ThemeGrid";
 import { ApplyModal } from "./components/ApplyModal";
 import { ThemeDetail } from "./components/ThemeDetail";
 import { InstalledCard } from "./components/InstalledCard";
+import { Studio } from "./components/Studio";
 import { Titlebar } from "./components/Titlebar";
 
 function loadThemes(key: string): Map<string, Theme> {
@@ -38,14 +39,6 @@ const INSTALLED_ORDER = [
   "wallpapers",
   "kvantum",
   "custom",
-];
-
-const STUDIO_TOOLS = [
-  { kind: "gtk", label: "GTK Theme Creator", desc: "Oomox — design & recolor GTK3/GTK4 themes" },
-  { kind: "plasma", label: "Plasma Look & Feel", desc: "KDE settings — global theme, splash, lockscreen" },
-  { kind: "colors", label: "Plasma Color Schemes", desc: "KDE settings — color scheme editor" },
-  { kind: "cursors", label: "Cursor Themes", desc: "KDE settings — cursor theme picker" },
-  { kind: "icons", label: "Icon Themes", desc: "KDE settings — icon theme picker" },
 ];
 
 export default function App() {
@@ -272,16 +265,6 @@ export default function App() {
     }
   };
 
-  const launch = async (kind: string) => {
-    setNotice("");
-    try {
-      await launchStudio(kind);
-      setNotice("Launched.");
-    } catch (e) {
-      setNotice(String(e));
-    }
-  };
-
   const categoryLabel =
     STORE_CATEGORIES.find((c) => c.id === category)?.label ?? "Themes";
 
@@ -429,21 +412,12 @@ export default function App() {
         )}
 
         {view === "studio" && (
-          <div className="content">
-            <div className="section-head">
-              <h3>Theme Studio</h3>
-              <span className="hint">Open the desktop's own theme creators</span>
-            </div>
-            {notice && <div className="notice">{notice}</div>}
-            <div className="studio-grid">
-              {STUDIO_TOOLS.map((t) => (
-                <button key={t.kind} className="studio-card" onClick={() => launch(t.kind)}>
-                  <div className="studio-name">{t.label}</div>
-                  <div className="studio-desc">{t.desc}</div>
-                </button>
-              ))}
-            </div>
-          </div>
+          <Studio
+            installed={installedList}
+            onSaved={() => {
+              fetchInstalled().then(setInstalledList).catch(() => {});
+            }}
+          />
         )}
 
         {view === "detail" && selected && (
