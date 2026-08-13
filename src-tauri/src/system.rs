@@ -120,6 +120,14 @@ fn find_preview(dir: &Path, kind: &str) -> Option<String> {
             .or_else(|| first_media(&dir.join("contents/images")))
             .or_else(|| first_media(&dir.join("contents/images_dark"))),
         "plasma" => named_file(dir, &["preview.png", "preview.jpg", "screenshot.png"])
+            // KDE's Plasma Style KCM previews the theme's analog clock
+            // (widgets/clock.svg) — a self-contained square, unlike the 9-slice
+            // dialog/panel backgrounds which rasterize to solid strips.
+            .or_else(|| named_file(&dir.join("widgets"), &["clock.svg", "clock.svgz"]))
+            .or_else(|| named_file(
+                &dir.join("widgets"),
+                &["background.svg", "background.svgz", "panel-background.svg", "panel-background.svgz"],
+            ))
             .or_else(|| named_file(&dir.join("dialogs"), &["background.svg", "background.svgz"]))
             .or_else(|| first_media(&dir.join("dialogs"))),
         "kvantum" => first_media(dir),
@@ -231,42 +239,59 @@ fn find_icon(dir: &Path, name: &str) -> Option<PathBuf> {
     None
 }
 
-/// Extract colors from a GTK theme's `gtk-3.0/gtk.css` (@define-color) for
-/// palette swatches — GTK themes have no screenshot convention.
+/// Build a semantic palette for a GTK theme from `gtk-3.0/gtk.css` `@define-color`
+/// entries (theme_bg_color, theme_base_color, …). Themes like Adwaita compile
+/// their colors into the GTK resource and ship none on disk, so fall back to a
+/// synthesized dark/light palette from the theme name.
 fn read_gtk_palette(dir: &Path) -> Option<Vec<String>> {
-    let text = fs::read_to_string(dir.join("gtk-3.0/gtk.css")).ok()?;
-    let mut colors: Vec<String> = vec![];
-    for line in text.lines() {
-        let line = line.trim();
-        if !line.starts_with("@define-color") {
-            continue;
-        }
-        let rest = line.trim_start_matches("@define-color");
-        let value = rest.split_whitespace().nth(1).unwrap_or("").trim_end_matches(';');
-        let v = value.to_ascii_lowercase();
-        let hex = if v.starts_with('#') && v.len() == 7 {
-            Some(v)
-        } else if v == "white" {
-            Some("#ffffff".to_string())
-        } else if v == "black" {
-            Some("#000000".to_string())
-        } else {
-            None
-        };
-        if let Some(h) = hex {
-            if !colors.contains(&h) {
-                colors.push(h);
+    let mut map: Vec<(String, String)> = Vec::new();
+    if let Ok(text) = fs::read_to_string(dir.join("gtk-3.0/gtk.css")) {
+        for line in text.lines() {
+            let line = line.trim();
+            if !line.starts_with("@define-color") {
+                continue;
+            }
+            let rest = line.trim_start_matches("@define-color").trim();
+            let mut it = rest.split_whitespace();
+            let key = it.next().unwrap_or("");
+            let raw = it.next().unwrap_or("").trim_end_matches(';').to_ascii_lowercase();
+            let hex = if raw.starts_with('#') && raw.len() == 7 {
+                Some(raw)
+            } else if raw == "white" {
+                Some("#ffffff".to_string())
+            } else if raw == "black" {
+                Some("#000000".to_string())
+            } else {
+                None
+            };
+            if let Some(h) = hex {
+                map.push((key.to_string(), h));
             }
         }
-        if colors.len() >= 6 {
-            break;
-        }
     }
-    if colors.is_empty() {
-        None
-    } else {
-        Some(colors)
-    }
+    let get = |names: &[&str]| {
+        names
+            .iter()
+            .find_map(|n| map.iter().find(|(k, _)| k.as_str() == *n).map(|(_, v)| v.clone()))
+    };
+
+    let name = dir
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("")
+        .to_ascii_lowercase();
+    let dark = name.contains("dark") || name.contains("night") || name.contains("black");
+
+    // Semantic order matches KDE's color mock: [window_bg, view_bg, button_bg,
+    // selection_bg, window_fg, view_fg].
+    let window_bg = get(&["theme_bg_color", "bg_color"]).unwrap_or_else(|| if dark { "#242424".into() } else { "#f6f5f4".into() });
+    let view_bg = get(&["theme_base_color", "base_color"]).unwrap_or_else(|| if dark { "#1e1e1e".into() } else { "#ffffff".into() });
+    let button_bg = get(&["button_bg_color", "theme_bg_color", "bg_color"]).unwrap_or_else(|| if dark { "#3c3c3c".into() } else { "#e2e2e2".into() });
+    let selection_bg = get(&["theme_selected_bg_color", "selected_bg_color", "accent_bg_color"]).unwrap_or_else(|| "#3584e4".into());
+    let window_fg = get(&["theme_fg_color", "fg_color"]).unwrap_or_else(|| if dark { "#ffffff".into() } else { "#2e3436".into() });
+    let view_fg = get(&["theme_text_color", "text_color", "theme_fg_color", "fg_color"]).unwrap_or_else(|| if dark { "#ffffff".into() } else { "#000000".into() });
+
+    Some(vec![window_bg, view_bg, button_bg, selection_bg, window_fg, view_fg])
 }
 
 /// Cache dir for generated preview thumbnails.
