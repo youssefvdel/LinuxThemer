@@ -125,37 +125,63 @@ fn find_preview(dir: &Path, kind: &str) -> Option<String> {
         "decorations" => named_file(dir, &["preview.png", "preview.jpg", "screenshot.png"])
             .or_else(|| named_file(dir, &["decoration.svg"])),
         "kvantum" => first_media(dir),
-        "icons" => find_representative_icon(dir),
-        _ => None,
+        _ => None, // icons use `samples` (6-icon row), not a single preview
     };
     found.map(|p| p.to_string_lossy().to_string())
 }
 
-/// Pick a representative icon from an icon theme (folder/home/known app), so the
-/// pack shows a real sample instead of a random file.
-fn find_representative_icon(dir: &Path) -> Option<PathBuf> {
-    const NAMES: &[&str] = &[
-        "folder",
-        "folder-open",
-        "home",
-        "user-home",
-        "system-file-manager",
-        "start-here",
-        "preferences-system",
-        "utilities-terminal",
-        "application-x-executable",
-        "input-keyboard",
+/// Find one icon by name across both common icon-theme layouts:
+/// `category/size/name.ext` (e.g. Amy-Dark: `places/32/folder.svg`) and
+/// `size/category/name.ext` (e.g. Adwaita/hicolor: `scalable/places/folder.svg`).
+fn find_icon(dir: &Path, name: &str) -> Option<PathBuf> {
+    const SUBDIRS: &[&str] = &[
+        "places",
+        "apps",
+        "devices",
+        "actions",
+        "mimetypes",
+        "categories",
+        "status",
+        "emblems",
     ];
-    const SUBDIRS: &[&str] = &["places", "apps", "devices", "actions"];
-    const SIZES: &[&str] = &["scalable", "48", "32", "24", "22", "16", "64", "128"];
-    for sub in SUBDIRS {
-        for size in SIZES {
-            for name in NAMES {
-                for ext in ["svg", "png"] {
-                    let p = dir.join(sub).join(size).join(format!("{name}.{ext}"));
-                    if p.is_file() {
-                        return Some(p);
-                    }
+    const SIZE_DIRS: &[&str] = &[
+        "scalable",
+        "symbolic",
+        "48",
+        "64",
+        "32",
+        "24",
+        "22",
+        "16",
+        "128",
+        "256",
+        "16x16",
+        "22x22",
+        "24x24",
+        "32x32",
+        "48x48",
+        "64x64",
+        "128x128",
+        "256x256",
+        "512x512",
+    ];
+    for ext in ["png", "svg"] {
+        let fname = format!("{name}.{ext}");
+        // layout 1: category/size/name
+        for sub in SUBDIRS {
+            for size in SIZE_DIRS {
+                let p = dir.join(sub).join(size).join(&fname);
+                if p.is_file() {
+                    return Some(p);
+                }
+            }
+        }
+        // layout 2: size/category/name
+        for size in SIZE_DIRS {
+            for sub in SUBDIRS {
+                let p = dir.join(size).join(sub).join(&fname);
+                if p.is_file() {
+                    return Some(p);
                 }
             }
         }
@@ -436,7 +462,7 @@ fn xcursor_to_png(path: &Path) -> Option<String> {
             best = Some((score, subtype, pos));
         }
     }
-    let (_, subtype, pos) = best?;
+    let (_, _, pos) = best?;
     // Image header (20B at pos+16): width, height, xhot, yhot, delay.
     // Nominal size = chunk subtype; actual pixel dims = width × height.
     let width = u32::from_le_bytes(bytes[pos + 16..pos + 20].try_into().ok()?) as usize;
@@ -517,28 +543,20 @@ fn find_representative_icons(dir: &Path) -> Option<Vec<String>> {
         "application-x-executable",
         "input-keyboard",
         "start-here",
+        "folder-documents",
+        "folder-download",
+        "user-trash",
     ];
-    let mut out: Vec<String> = vec![];
-    let mut seen: HashSet<String> = HashSet::new(); // one icon per name
-    'outer: for sub in ["places", "apps", "devices", "actions", "mimetypes"] {
-        for size in ["scalable", "48", "32", "24", "22", "16", "64", "128"] {
-            for name in NAMES {
-                for ext in ["png", "svg"] {
-                    let p = dir.join(sub).join(size).join(format!("{name}.{ext}"));
-                    if p.is_file() && seen.insert(name.to_string()) {
-                        out.push(p.to_string_lossy().to_string());
-                        if out.len() >= 6 {
-                            break 'outer;
-                        }
-                    }
-                }
-            }
-        }
-    }
+    let out: Vec<String> = NAMES
+        .iter()
+        .filter_map(|name| find_icon(dir, name))
+        .take(6)
+        .filter_map(|p| thumb_path_for(&p.to_string_lossy()))
+        .collect();
     if out.is_empty() {
         None
     } else {
-        Some(out.into_iter().filter_map(|p| thumb_path_for(&p)).collect())
+        Some(out)
     }
 }
 
