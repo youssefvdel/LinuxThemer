@@ -17,8 +17,10 @@ pub struct InstalledTheme {
     pub kind: String,
     pub path: String,
     pub preview: Option<String>,
-    /// Representative colors (KDE color schemes) when no screenshot exists.
+    /// Representative colors (KDE color schemes / GTK css) for a mock-window.
     pub palette: Option<Vec<String>>,
+    /// Sample images (icon themes: a few icons; cursor themes: rendered cursors).
+    pub samples: Option<Vec<String>>,
 }
 
 fn home() -> PathBuf {
@@ -287,6 +289,11 @@ fn scan(kind: &str, roots: &[PathBuf], filter: impl Fn(&Path) -> bool) -> Vec<In
                 } else {
                     None
                 },
+                samples: match kind {
+                    "icons" => find_representative_icons(&d),
+                    "cursors" => find_cursor_samples(&d),
+                    _ => None,
+                },
             });
         }
     }
@@ -323,6 +330,7 @@ fn scan_files(kind: &str, roots: &[PathBuf], ext: &str) -> Vec<InstalledTheme> {
                     } else {
                         None
                     },
+                    samples: None,
                 });
             }
         }
@@ -335,33 +343,200 @@ fn custom_dir() -> PathBuf {
     home().join(".local/share/linuxthemer/custom")
 }
 
-/// Extract representative surface colors from a KDE `.colors` file (INI), so
-/// color schemes can render a palette swatch when no screenshot exists.
+/// Extract colors from a KDE `.colors` file (INI) in a fixed semantic order:
+/// [window_bg, view_bg, button_bg, selection_bg, window_fg, view_fg] — enough
+/// to render a mock window like KDE System Settings' Colors page.
 fn read_color_palette(path: &Path) -> Option<Vec<String>> {
     let text = fs::read_to_string(path).ok()?;
-    let mut colors: Vec<String> = vec![];
+    let mut cur = String::new();
+    let mut window = (String::new(), String::new());
+    let mut view = (String::new(), String::new());
+    let mut button = (String::new(), String::new());
+    let mut selection = (String::new(), String::new());
     for raw in text.lines() {
         let line = raw.trim();
         if line.starts_with('[') && line.ends_with(']') {
+            cur = line[1..line.len() - 1].to_string();
             continue;
         }
         if let Some((k, v)) = line.split_once('=') {
-            if k.trim() == "BackgroundNormal" {
-                if let Some(hex) = rgb_to_hex(v.trim()) {
-                    if !colors.contains(&hex) {
-                        colors.push(hex);
+            let hex = match rgb_to_hex(v.trim()) {
+                Some(h) => h,
+                None => continue,
+            };
+            let slot = match (cur.as_str(), k.trim()) {
+                ("Colors:Window", "BackgroundNormal") => &mut window.0,
+                ("Colors:Window", "ForegroundNormal") => &mut window.1,
+                ("Colors:View", "BackgroundNormal") => &mut view.0,
+                ("Colors:View", "ForegroundNormal") => &mut view.1,
+                ("Colors:Button", "BackgroundNormal") => &mut button.0,
+                ("Colors:Button", "ForegroundNormal") => &mut button.1,
+                ("Colors:Selection", "BackgroundNormal") => &mut selection.0,
+                ("Colors:Selection", "ForegroundNormal") => &mut selection.1,
+                _ => continue,
+            };
+            if slot.is_empty() {
+                *slot = hex;
+            }
+        }
+    }
+    let mut out = vec![];
+    for s in [&window, &view, &button, &selection] {
+        if !s.0.is_empty() {
+            out.push(s.0.clone());
+        }
+    }
+    if !window.1.is_empty() {
+        out.push(window.1.clone());
+    }
+    if !view.1.is_empty() {
+        out.push(view.1.clone());
+    }
+    if out.is_empty() {
+        None
+    } else {
+        Some(out)
+    }
+}
+
+/// Decode one X11 cursor theme file (libXcursor "Xcur" format) and cache a PNG
+/// render. Layout (verified byte-for-byte against real themes + libXcursor):
+/// 16-byte file header, TOC of 12-byte entries, then chunks. An image chunk
+/// (type 0xfffd0002) = 16-byte chunk header (header, type, subtype=nominal
+/// size, version) + 20-byte image header (size, width, xhot, yhot, delay) +
+/// raw ARGB32 pixels (width × subtype) at pos+36.
+fn xcursor_to_png(path: &Path) -> Option<String> {
+    let bytes = fs::read(path).ok()?;
+    if bytes.len() < 16 || u32::from_le_bytes(bytes[0..4].try_into().ok()?) != 0x72756358 {
+        return None; // not an Xcursor file
+    }
+    let ntoc = u32::from_le_bytes(bytes[12..16].try_into().ok()?) as usize;
+    if bytes.len() < 16 + ntoc * 12 {
+        return None;
+    }
+    // Prefer the chunk whose nominal size is closest to 32 (good preview size).
+    let mut best: Option<(i32, u32, usize)> = None; // (score, subtype, pos)
+    for i in 0..ntoc {
+        let off = 16 + i * 12;
+        let ctype = u32::from_le_bytes(bytes[off..off + 4].try_into().ok()?);
+        if ctype != 0xfffd_0002 {
+            continue;
+        }
+        let subtype = u32::from_le_bytes(bytes[off + 4..off + 8].try_into().ok()?);
+        let pos = u32::from_le_bytes(bytes[off + 8..off + 12].try_into().ok()?) as usize;
+        if subtype == 0 || pos + 36 > bytes.len() {
+            continue;
+        }
+        let score = if subtype >= 16 {
+            -(subtype as i32 - 32).abs()
+        } else {
+            i32::MAX
+        };
+        if best.map(|(s, _, _)| score > s).unwrap_or(true) {
+            best = Some((score, subtype, pos));
+        }
+    }
+    let (_, subtype, pos) = best?;
+    let width = u32::from_le_bytes(bytes[pos + 20..pos + 24].try_into().ok()?) as usize;
+    let height = subtype as usize;
+    let px_start = pos + 36;
+    let n = width.saturating_mul(height);
+    if width == 0 || height == 0 || px_start + n * 4 > bytes.len() {
+        return None;
+    }
+    let mut rgba = Vec::with_capacity(n * 4);
+    for i in 0..n {
+        let o = px_start + i * 4;
+        let px = u32::from_le_bytes(bytes[o..o + 4].try_into().ok()?);
+        rgba.extend_from_slice(&[(px >> 16) as u8, (px >> 8) as u8, px as u8, (px >> 24) as u8]);
+    }
+    let img = image::RgbaImage::from_raw(width as u32, height as u32, rgba)?;
+    // Key the cache by canonical path so aliases (symlinks) share one PNG.
+    let canon = fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+    let mut hasher = DefaultHasher::new();
+    canon.to_string_lossy().hash(&mut hasher);
+    let dir = thumb_cache_dir();
+    fs::create_dir_all(&dir).ok()?;
+    let out = dir.join(format!("{:016x}.png", hasher.finish()));
+    if !out.exists() {
+        let f = fs::File::create(&out).ok()?;
+        let mut w = std::io::BufWriter::new(f);
+        image::DynamicImage::ImageRgba8(img)
+            .write_to(&mut w, image::ImageFormat::Png)
+            .ok()?;
+    }
+    Some(out.to_string_lossy().to_string())
+}
+
+/// Render a few real cursors (left_ptr, hand, text, crosshair…) from a cursor
+/// theme so the card shows a KDE-Settings-style cursor preview.
+fn find_cursor_samples(dir: &Path) -> Option<Vec<String>> {
+    const NAMES: &[&str] = &[
+        "left_ptr", "default", "hand2", "pointer", "xterm", "text", "crosshair", "cross",
+        "size_all",
+    ];
+    let cd = dir.join("cursors");
+    let mut out: Vec<String> = vec![];
+    let mut seen: HashSet<PathBuf> = HashSet::new();
+    for name in NAMES {
+        let p = cd.join(name);
+        if !p.is_file() {
+            continue;
+        }
+        let canon = fs::canonicalize(&p).unwrap_or_else(|_| p.clone());
+        if !seen.insert(canon) {
+            continue; // alias (symlink) of an already-picked cursor
+        }
+        if let Some(png) = xcursor_to_png(&p) {
+            out.push(png);
+        }
+        if out.len() >= 4 {
+            break;
+        }
+    }
+    if out.is_empty() {
+        None
+    } else {
+        Some(out)
+    }
+}
+
+/// Collect a handful of well-known icons (folder, home, apps…) from an icon
+/// theme so the card shows a KDE-Settings-style sample row.
+fn find_representative_icons(dir: &Path) -> Option<Vec<String>> {
+    const NAMES: &[&str] = &[
+        "folder",
+        "folder-open",
+        "home",
+        "user-home",
+        "system-file-manager",
+        "preferences-system",
+        "utilities-terminal",
+        "application-x-executable",
+        "input-keyboard",
+        "start-here",
+    ];
+    let mut out: Vec<String> = vec![];
+    let mut seen: HashSet<String> = HashSet::new(); // one icon per name
+    'outer: for sub in ["places", "apps", "devices", "actions", "mimetypes"] {
+        for size in ["scalable", "48", "32", "24", "22", "16", "64", "128"] {
+            for name in NAMES {
+                for ext in ["png", "svg"] {
+                    let p = dir.join(sub).join(size).join(format!("{name}.{ext}"));
+                    if p.is_file() && seen.insert(name.to_string()) {
+                        out.push(p.to_string_lossy().to_string());
+                        if out.len() >= 6 {
+                            break 'outer;
+                        }
                     }
                 }
             }
         }
-        if colors.len() >= 6 {
-            break;
-        }
     }
-    if colors.is_empty() {
+    if out.is_empty() {
         None
     } else {
-        Some(colors)
+        Some(out.into_iter().filter_map(|p| thumb_path_for(&p)).collect())
     }
 }
 
@@ -383,6 +558,7 @@ fn custom_themes() -> Vec<InstalledTheme> {
                     path: p.to_string_lossy().to_string(),
                     preview: None,
                     palette: None,
+                    samples: None,
                 });
             }
         }
@@ -671,7 +847,7 @@ fn hex_to_rgb(hex: &str) -> Result<String, String> {
 fn set_ini_key(path: &Path, section: &str, key: &str, value: &str) -> Result<(), String> {
     let text = fs::read_to_string(path).unwrap_or_default();
     let mut out: Vec<String> = Vec::new();
-    let mut cur = String::new();
+    let mut cur; // first use is assignment (section header), so no init needed
     let mut in_section = false;
     let mut wrote = false;
 

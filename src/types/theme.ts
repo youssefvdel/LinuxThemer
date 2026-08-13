@@ -53,8 +53,10 @@ export interface InstalledTheme {
   path: string;
   /** Absolute path to a preview image/video on disk (may be absent). */
   preview?: string;
-  /** Representative colors (color schemes) when no preview exists. */
+  /** Representative colors (color schemes / GTK css) for a mock-window. */
   palette?: string[];
+  /** Sample images (icon themes: a few icons; cursor themes: rendered cursors). */
+  samples?: string[];
 }
 
 /** The user's currently-applied theme (read from live config files). */
