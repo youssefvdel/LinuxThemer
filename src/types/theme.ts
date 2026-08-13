@@ -51,6 +51,8 @@ export interface InstalledTheme {
   name: string;
   kind: string;
   path: string;
+  /** Absolute path to a preview image on disk (may be absent). */
+  preview?: string;
 }
 
 export const INSTALLED_KIND_LABELS: Record<string, string> = {

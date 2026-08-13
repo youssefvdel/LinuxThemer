@@ -7,6 +7,7 @@ import {
   Download,
   Heart,
   Search,
+  Trash2,
 } from "lucide-react";
 
 interface IconProps {
@@ -43,4 +44,8 @@ export function BackIcon({ size = 16 }: IconProps) {
 
 export function HeartIcon({ size = 14, filled = false }: IconProps & { filled?: boolean }) {
   return <Heart size={size} fill={filled ? "currentColor" : "none"} />;
+}
+
+export function TrashIcon({ size = 13 }: IconProps) {
+  return <Trash2 size={size} />;
 }

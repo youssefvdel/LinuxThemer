@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchStore, STORE_CATEGORIES } from "./lib/store";
-import { fetchInstalled, saveCurrentTheme, launchStudio } from "./lib/installed";
+import { fetchInstalled, saveCurrentTheme, launchStudio, removeInstalled } from "./lib/installed";
 import {
   APPLY_COMPONENTS,
   INSTALLED_KIND_LABELS,
@@ -71,6 +71,8 @@ export default function App() {
   );
   const [installedList, setInstalledList] = useState<InstalledTheme[]>([]);
   const [installedTab, setInstalledTab] = useState("global");
+  const [applyingInstalled, setApplyingInstalled] = useState<InstalledTheme | null>(null);
+  const [activeInstalledId, setActiveInstalledId] = useState<string | null>(null);
   const [showSave, setShowSave] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [saving, setSaving] = useState(false);
@@ -200,6 +202,33 @@ export default function App() {
   const confirmApply = () => {
     if (applying) toggleInstall(applying);
     setApplying(null);
+  };
+
+  const openInstalledApply = (item: InstalledTheme) => {
+    if (item.kind === "global") {
+      setComponents(new Set(APPLY_COMPONENTS.map((c) => c.id)));
+      setApplyingInstalled(item);
+    } else {
+      setActiveInstalledId(item.id);
+      setNotice(`Applied ${item.name}.`);
+    }
+  };
+
+  const confirmInstalledApply = () => {
+    if (applyingInstalled) setActiveInstalledId(applyingInstalled.id);
+    setApplyingInstalled(null);
+  };
+
+  const removeTheme = async (item: InstalledTheme) => {
+    setNotice("");
+    try {
+      await removeInstalled(item.path);
+      setActiveInstalledId((id) => (id === item.id ? null : id));
+      setInstalledList(await fetchInstalled());
+      setNotice(`Removed ${item.name}.`);
+    } catch (e) {
+      setNotice(String(e));
+    }
   };
 
   const selectCategory = (id: string) => {
@@ -364,7 +393,13 @@ export default function App() {
                 </div>
                 <div className="installed-grid">
                   {(grouped.get(installedTab) ?? []).map((it) => (
-                    <InstalledCard key={it.id} item={it} />
+                    <InstalledCard
+                      key={it.id}
+                      item={it}
+                      active={activeInstalledId === it.id}
+                      onApply={openInstalledApply}
+                      onRemove={removeTheme}
+                    />
                   ))}
                 </div>
               </>
@@ -423,13 +458,19 @@ export default function App() {
         )}
       </div>
 
-      {applying && (
+      {(applying || applyingInstalled) && (
         <ApplyModal
-          theme={applying}
+          name={(applying ?? applyingInstalled)!.name}
           selected={components}
           onToggle={toggleComponent}
-          onCancel={() => setApplying(null)}
-          onConfirm={confirmApply}
+          onCancel={() => {
+            setApplying(null);
+            setApplyingInstalled(null);
+          }}
+          onConfirm={() => {
+            if (applying) confirmApply();
+            else confirmInstalledApply();
+          }}
         />
       )}
       </div>

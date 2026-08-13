@@ -12,3 +12,7 @@ export async function saveCurrentTheme(name: string): Promise<string> {
 export async function launchStudio(kind: string): Promise<string> {
   return invoke<string>("launch_studio", { kind });
 }
+
+export async function removeInstalled(path: string): Promise<void> {
+  return invoke<void>("remove_installed", { path });
+}

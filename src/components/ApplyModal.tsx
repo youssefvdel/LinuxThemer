@@ -1,21 +1,20 @@
-import type { Theme } from "../types/theme";
 import { APPLY_COMPONENTS } from "../types/theme";
 import { CheckIcon } from "./Icon";
 
 interface Props {
-  theme: Theme;
+  name: string;
   selected: Set<string>;
   onToggle: (id: string) => void;
   onCancel: () => void;
   onConfirm: () => void;
 }
 
-export function ApplyModal({ theme, selected, onToggle, onCancel, onConfirm }: Props) {
+export function ApplyModal({ name, selected, onToggle, onCancel, onConfirm }: Props) {
   return (
     <div className="modal-overlay" onClick={onCancel}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
-          <h3>Apply {theme.name}</h3>
+          <h3>Apply {name}</h3>
           <button className="modal-close" onClick={onCancel}>
             ×
           </button>

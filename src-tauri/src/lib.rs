@@ -16,7 +16,8 @@ pub fn run() {
             fetch_themes,
             system::list_installed,
             system::save_current_theme,
-            system::launch_studio
+            system::launch_studio,
+            system::remove_installed
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

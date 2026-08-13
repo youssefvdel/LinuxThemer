@@ -14,6 +14,7 @@ pub struct InstalledTheme {
     pub name: String,
     pub kind: String,
     pub path: String,
+    pub preview: Option<String>,
 }
 
 fn home() -> PathBuf {
@@ -42,6 +43,49 @@ fn has_entry(dir: &Path, name: &str) -> bool {
     dir.join(name).exists()
 }
 
+fn first_image(dir: &Path) -> Option<PathBuf> {
+    let rd = fs::read_dir(dir).ok()?;
+    for e in rd.filter_map(|e| e.ok()) {
+        let p = e.path();
+        if !p.is_file() {
+            continue;
+        }
+        if let Some(ext) = p.extension().and_then(|x| x.to_str()) {
+            let e = ext.to_ascii_lowercase();
+            if matches!(e.as_str(), "png" | "jpg" | "jpeg" | "webp") {
+                return Some(p);
+            }
+        }
+    }
+    None
+}
+
+fn find_preview(dir: &Path, kind: &str) -> Option<String> {
+    if kind == "wallpapers" {
+        return first_image(dir).map(|p| p.to_string_lossy().to_string());
+    }
+    for sub in ["contents/previews", "previews"] {
+        if let Some(p) = first_image(&dir.join(sub)) {
+            return Some(p.to_string_lossy().to_string());
+        }
+    }
+    for fname in [
+        "preview.png",
+        "preview.jpg",
+        "preview.webp",
+        "screenshot.png",
+        "screenshot.jpg",
+        "theme-preview.png",
+        "theme-preview.jpg",
+    ] {
+        let p = dir.join(fname);
+        if p.is_file() {
+            return Some(p.to_string_lossy().to_string());
+        }
+    }
+    None
+}
+
 fn scan(kind: &str, roots: &[PathBuf], filter: impl Fn(&Path) -> bool) -> Vec<InstalledTheme> {
     let mut seen = HashSet::new();
     let mut out = vec![];
@@ -62,6 +106,7 @@ fn scan(kind: &str, roots: &[PathBuf], filter: impl Fn(&Path) -> bool) -> Vec<In
                 name,
                 kind: kind.to_string(),
                 path: d.to_string_lossy().to_string(),
+                preview: find_preview(&d, kind),
             });
         }
     }
@@ -89,6 +134,7 @@ fn custom_themes() -> Vec<InstalledTheme> {
                     name,
                     kind: "custom".to_string(),
                     path: p.to_string_lossy().to_string(),
+                    preview: None,
                 });
             }
         }
@@ -164,6 +210,24 @@ pub fn list_installed() -> Result<Vec<InstalledTheme>, String> {
     all.extend(custom_themes());
 
     Ok(all)
+}
+
+/// Remove an installed theme from disk. Only paths under $HOME are removable —
+/// system themes under /usr/share are never touched.
+#[tauri::command]
+pub fn remove_installed(path: String) -> Result<(), String> {
+    let p = PathBuf::from(&path);
+    let h = home();
+    if !p.starts_with(&h) {
+        return Err("refusing to remove anything outside your home directory".into());
+    }
+    if p.is_dir() {
+        fs::remove_dir_all(&p).map_err(|e| e.to_string())
+    } else if p.is_file() {
+        fs::remove_file(&p).map_err(|e| e.to_string())
+    } else {
+        Err("path does not exist".into())
+    }
 }
 
 fn read_ini(path: &Path, section: &str, key: &str) -> Option<String> {

@@ -1077,29 +1077,82 @@ textarea {
 /* ---- installed list ---- */
 .installed-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
 }
 .installed-card {
   background: var(--surface);
-  border-radius: 16px;
-  padding: 12px 14px;
-  box-shadow: var(--clay-btn);
-  transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: var(--clay);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .installed-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px) scale(1.01);
+}
+.installed-thumb {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  background: var(--surface-2);
+}
+.installed-thumb img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.installed-thumb-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.installed-body {
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 .installed-name {
   font-weight: 800;
-  font-size: 13.5px;
+  font-size: 14px;
+}
+.installed-meta {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent-strong);
 }
 .installed-path {
   font-size: 11px;
   color: var(--text-faint);
   font-family: var(--font-mono);
-  margin-top: 4px;
+  margin-top: 2px;
   word-break: break-all;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.installed-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.installed-actions .btn {
+  flex: 1;
+  justify-content: center;
+  padding: 7px 0;
+  font-size: 12.5px;
+}
+.btn-ghost.danger {
+  color: var(--danger);
 }
 
 /* ---- studio ---- */
