@@ -15,6 +15,7 @@ import { ThemeGrid } from "./components/ThemeGrid";
 import { ApplyModal } from "./components/ApplyModal";
 import { ThemeDetail } from "./components/ThemeDetail";
 import { InstalledCard } from "./components/InstalledCard";
+import { Titlebar } from "./components/Titlebar";
 
 function loadThemes(key: string): Map<string, Theme> {
   try {
@@ -255,8 +256,10 @@ export default function App() {
     STORE_CATEGORIES.find((c) => c.id === category)?.label ?? "Themes";
 
   return (
-    <div className="app">
-      <Sidebar
+    <div className="window">
+      <Titlebar />
+      <div className="app">
+        <Sidebar
         categories={STORE_CATEGORIES}
         activeCategory={category}
         onSelectCategory={selectCategory}
@@ -428,6 +431,7 @@ export default function App() {
           onConfirm={confirmApply}
         />
       )}
+      </div>
     </div>
   );
 }
