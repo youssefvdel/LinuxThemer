@@ -16,7 +16,10 @@ import { ApplyModal } from "./components/ApplyModal";
 import { ThemeDetail } from "./components/ThemeDetail";
 import { InstalledCard } from "./components/InstalledCard";
 import { Studio } from "./components/Studio";
+import { Settings } from "./components/Settings";
 import { Titlebar } from "./components/Titlebar";
+import { applyAccent } from "./lib/accent";
+import { fetchCurrentTheme } from "./lib/studio";
 
 function loadThemes(key: string): Map<string, Theme> {
   try {
@@ -84,6 +87,13 @@ export default function App() {
   // Device scan: once on mount, then refresh whenever entering Installed view.
   useEffect(() => {
     fetchInstalled().then(setInstalledList).catch(() => setInstalledList([]));
+  }, []);
+
+  // Follow the system accent color (KDE AccentColor) on launch.
+  useEffect(() => {
+    fetchCurrentTheme()
+      .then((c) => applyAccent(c.accentColor || "#3daee9"))
+      .catch(() => {});
   }, []);
   useEffect(() => {
     if (view !== "installed") return;
@@ -416,6 +426,8 @@ export default function App() {
             }}
           />
         )}
+
+        {view === "settings" && <Settings installed={installedList} />}
 
         {view === "detail" && selected && (
           <ThemeDetail

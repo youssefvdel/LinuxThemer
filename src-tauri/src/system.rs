@@ -240,6 +240,7 @@ pub struct CurrentTheme {
     pub gtk_theme: String,
     pub plasma_theme: String,
     pub kvantum: String,
+    pub accent_color: String,
 }
 
 /// Components assembled into a new global theme by the Studio.
@@ -295,6 +296,9 @@ pub fn current_theme() -> Result<CurrentTheme, String> {
         gtk_theme: read_ini(&gtk3, "Settings", "gtk-theme-name").unwrap_or_default(),
         plasma_theme: read_ini(&plasmarc, "Theme", "name").unwrap_or_default(),
         kvantum: read_ini(&kvconfig, "General", "theme").unwrap_or_default(),
+        accent_color: read_ini(&kdeglobals, "General", "AccentColor")
+            .and_then(|v| rgb_to_hex(&v))
+            .unwrap_or_else(|| "#3daee9".to_string()),
     })
 }
 
@@ -359,6 +363,108 @@ pub fn save_global_theme(name: String, spec: GlobalThemeSpec) -> Result<String, 
     .map_err(|e| e.to_string())?;
 
     Ok(dir.to_string_lossy().to_string())
+}
+
+fn rgb_to_hex(rgb: &str) -> Option<String> {
+    let parts: Vec<&str> = rgb.split(',').map(|s| s.trim()).collect();
+    if parts.len() != 3 {
+        return None;
+    }
+    let r: u8 = parts[0].parse().ok()?;
+    let g: u8 = parts[1].parse().ok()?;
+    let b: u8 = parts[2].parse().ok()?;
+    Some(format!("#{r:02x}{g:02x}{b:02x}"))
+}
+
+fn hex_to_rgb(hex: &str) -> Result<String, String> {
+    let h = hex.trim_start_matches('#');
+    if h.len() != 6 {
+        return Err("accent color must be #RRGGBB".into());
+    }
+    let r = u8::from_str_radix(&h[0..2], 16).map_err(|_| "invalid hex".to_string())?;
+    let g = u8::from_str_radix(&h[2..4], 16).map_err(|_| "invalid hex".to_string())?;
+    let b = u8::from_str_radix(&h[4..6], 16).map_err(|_| "invalid hex".to_string())?;
+    Ok(format!("{r},{g},{b}"))
+}
+
+/// Set a single key in an INI file, preserving all other content (kwriteconfig-style).
+fn set_ini_key(path: &Path, section: &str, key: &str, value: &str) -> Result<(), String> {
+    let text = fs::read_to_string(path).unwrap_or_default();
+    let mut out: Vec<String> = Vec::new();
+    let mut cur = String::new();
+    let mut in_section = false;
+    let mut wrote = false;
+
+    for line in text.lines() {
+        let t = line.trim();
+        if t.starts_with('[') && t.ends_with(']') {
+            if in_section && !wrote {
+                out.push(format!("{key}={value}"));
+                wrote = true;
+            }
+            cur = t[1..t.len() - 1].to_string();
+            in_section = cur == section;
+            out.push(line.to_string());
+        } else if in_section
+            && !wrote
+            && line
+                .split_once('=')
+                .map(|(k, _)| k.trim() == key)
+                .unwrap_or(false)
+        {
+            out.push(format!("{key}={value}"));
+            wrote = true;
+        } else {
+            out.push(line.to_string());
+        }
+    }
+    if !wrote {
+        if !in_section {
+            out.push(format!("[{section}]"));
+        }
+        out.push(format!("{key}={value}"));
+    }
+    let mut s = out.join("\n");
+    if !s.ends_with('\n') {
+        s.push('\n');
+    }
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    fs::write(path, s).map_err(|e| e.to_string())
+}
+
+/// Apply one theme component to the live system (write config + reload where possible).
+#[tauri::command]
+pub fn apply_component(kind: String, value: String) -> Result<(), String> {
+    let h = home();
+    match kind.as_str() {
+        "gtk" => {
+            for p in ["gtk-3.0/settings.ini", "gtk-4.0/settings.ini"] {
+                set_ini_key(&h.join(".config").join(p), "Settings", "gtk-theme-name", &value)?;
+            }
+        }
+        "icons" => set_ini_key(&h.join(".config/kdeglobals"), "Icons", "Theme", &value)?,
+        "cursors" => {
+            set_ini_key(&h.join(".config/kcminputrc"), "Mouse", "cursorTheme", &value)?;
+            let _ = Command::new("plasma-apply-cursortheme").arg(&value).spawn();
+        }
+        "colors" => {
+            set_ini_key(&h.join(".config/kdeglobals"), "General", "ColorScheme", &value)?;
+            let _ = Command::new("plasma-apply-colorscheme").arg(&value).spawn();
+        }
+        "qt" => set_ini_key(&h.join(".config/kdeglobals"), "KDE", "widgetStyle", &value)?,
+        "plasma" => {
+            set_ini_key(&h.join(".config/plasmarc"), "Theme", "name", &value)?;
+            let _ = Command::new("plasma-apply-desktoptheme").arg(&value).spawn();
+        }
+        "accent" => {
+            let rgb = hex_to_rgb(&value)?;
+            set_ini_key(&h.join(".config/kdeglobals"), "General", "AccentColor", &rgb)?;
+        }
+        _ => return Err(format!("unknown component: {kind}")),
+    }
+    Ok(())
 }
 
 fn read_ini(path: &Path, section: &str, key: &str) -> Option<String> {

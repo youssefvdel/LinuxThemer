@@ -18,10 +18,10 @@
   --text: #191a17;
   --text-dim: #4a4945;
   --text-faint: #8a8984;
-  --accent: #af9c76;
-  --accent-strong: #8f7c58;
-  --accent-soft: rgba(175, 156, 118, 0.22);
-  --on-accent: #191a17;
+  --accent: #3daee9;
+  --accent-strong: #3daee9;
+  --accent-soft: rgba(61, 174, 233, 0.18);
+  --on-accent: #ffffff;
   --success: #2f9e6e;
   --danger: #d64545;
   --radius-lg: 24px;
@@ -49,10 +49,10 @@
     --text: #f2f4f3;
     --text-dim: #ceccca;
     --text-faint: #8f8d84;
-    --accent: #af9c76;
-    --accent-strong: #c3b28d;
-    --accent-soft: rgba(175, 156, 118, 0.16);
-    --on-accent: #191a17;
+    --accent: #3daee9;
+    --accent-strong: #7cc4f0;
+    --accent-soft: rgba(61, 174, 233, 0.18);
+    --on-accent: #ffffff;
     --success: #34d399;
     --danger: #f87171;
     --clay: 8px 12px 28px rgba(0, 0, 0, 0.5), inset -6px -9px 16px rgba(0, 0, 0, 0.32), inset 6px 8px 16px rgba(255, 255, 255, 0.05);
@@ -1238,6 +1238,34 @@ textarea {
   color: var(--text-faint);
   margin-top: 3px;
   word-break: break-all;
+}
+.accent-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.accent-swatch {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--clay-btn);
+  transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.accent-swatch:hover {
+  transform: translateY(-2px) scale(1.06);
+}
+.accent-swatch.on {
+  outline: 3px solid var(--text);
+  outline-offset: 2px;
+}
+.settings-val {
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-faint);
+  font-weight: 700;
 }
 .notice {
   margin-bottom: 12px;

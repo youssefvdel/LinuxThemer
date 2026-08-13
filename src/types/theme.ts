@@ -1,6 +1,6 @@
 export type SortId = "popular" | "rating" | "name";
 
-export type View = "browse" | "installed" | "favorites" | "detail" | "studio";
+export type View = "browse" | "installed" | "favorites" | "detail" | "studio" | "settings";
 
 export type ApplyComponentId =
   | "gtk"
@@ -64,6 +64,7 @@ export interface CurrentTheme {
   gtkTheme: string;
   plasmaTheme: string;
   kvantum: string;
+  accentColor: string;
 }
 
 /** Components assembled into a new global theme by the Studio. */

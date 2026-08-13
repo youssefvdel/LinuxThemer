@@ -107,7 +107,7 @@ export function ThemeCard({
             }}
           >
             {installed ? <CheckIcon /> : <DownloadIcon />}
-            {installed ? "Applied" : "Apply"}
+            {installed ? "Downloaded" : "Download"}
           </button>
         </div>
       </div>

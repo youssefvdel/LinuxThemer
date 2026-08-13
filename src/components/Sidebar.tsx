@@ -1,4 +1,4 @@
-import { Heart, LayoutGrid, PackageCheck, Palette } from "lucide-react";
+import { Heart, LayoutGrid, PackageCheck, Palette, Settings } from "lucide-react";
 import logo from "../assets/logo.png";
 import type { StoreCategory } from "../lib/store";
 import type { View } from "../types/theme";
@@ -8,6 +8,7 @@ const nav = [
   { id: "installed", label: "Installed", Icon: PackageCheck },
   { id: "favorites", label: "Favorites", Icon: Heart },
   { id: "studio", label: "Studio", Icon: Palette },
+  { id: "settings", label: "Settings", Icon: Settings },
 ] as const;
 
 interface Props {
@@ -52,15 +53,17 @@ export function Sidebar({
       ))}
 
       <div className="nav-label">Categories</div>
-      {categories.map((c) => (
-        <div
-          key={c.id}
-          className={`nav-item ${view === "browse" && activeCategory === c.id ? "active" : ""}`}
-          onClick={() => onSelectCategory(c.id)}
-        >
-          {c.label}
-        </div>
-      ))}
+      {[...categories]
+        .sort((a, b) => a.label.length - b.label.length)
+        .map((c) => (
+          <div
+            key={c.id}
+            className={`nav-item ${view === "browse" && activeCategory === c.id ? "active" : ""}`}
+            onClick={() => onSelectCategory(c.id)}
+          >
+            {c.label}
+          </div>
+        ))}
 
       <div className="sidebar-footer">
         <span>v0.1.0</span>

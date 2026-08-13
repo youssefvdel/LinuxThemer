@@ -16,3 +16,7 @@ export async function launchStudio(kind: string): Promise<string> {
 export async function removeInstalled(path: string): Promise<void> {
   return invoke<void>("remove_installed", { path });
 }
+
+export async function applyComponent(kind: string, value: string): Promise<void> {
+  return invoke<void>("apply_component", { kind, value });
+}
