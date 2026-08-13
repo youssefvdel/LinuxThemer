@@ -332,24 +332,41 @@ fn slugify(name: &str) -> String {
 #[tauri::command]
 pub fn current_theme() -> Result<CurrentTheme, String> {
     let h = home();
+    // KDE applies the user's chosen theme through a layered config: the main
+    // ~/.config/<file> holds runtime values, and ~/.config/kdedefaults/<file>
+    // holds the "defaults" written when a global theme is applied. Some keys
+    // (ColorScheme, widgetStyle, icons) live only in kdedefaults, so merge both.
     let kdeglobals = h.join(".config/kdeglobals");
+    let kd_kdeglobals = h.join(".config/kdedefaults/kdeglobals");
     let kcminputrc = h.join(".config/kcminputrc");
+    let kd_kcminputrc = h.join(".config/kdedefaults/kcminputrc");
     let gtk3 = h.join(".config/gtk-3.0/settings.ini");
     let plasmarc = h.join(".config/plasmarc");
+    let kd_plasmarc = h.join(".config/kdedefaults/plasmarc");
     let kvconfig = h.join(".config/Kvantum/kvantum.kvconfig");
     Ok(CurrentTheme {
-        widget_style: read_ini(&kdeglobals, "KDE", "widgetStyle")
+        widget_style: read_ini_merged(&[&kdeglobals, &kd_kdeglobals], "KDE", "widgetStyle")
             .unwrap_or_else(|| "Breeze".to_string()),
-        color_scheme: read_ini(&kdeglobals, "General", "ColorScheme").unwrap_or_default(),
-        icon_theme: read_ini(&kdeglobals, "Icons", "Theme").unwrap_or_default(),
-        cursor_theme: read_ini(&kcminputrc, "Mouse", "cursorTheme").unwrap_or_default(),
+        color_scheme: read_ini_merged(&[&kdeglobals, &kd_kdeglobals], "General", "ColorScheme")
+            .unwrap_or_default(),
+        icon_theme: read_ini_merged(&[&kdeglobals, &kd_kdeglobals], "Icons", "Theme")
+            .unwrap_or_default(),
+        cursor_theme: read_ini_merged(&[&kcminputrc, &kd_kcminputrc], "Mouse", "cursorTheme")
+            .unwrap_or_default(),
         gtk_theme: read_ini(&gtk3, "Settings", "gtk-theme-name").unwrap_or_default(),
-        plasma_theme: read_ini(&plasmarc, "Theme", "name").unwrap_or_default(),
+        plasma_theme: read_ini_merged(&[&plasmarc, &kd_plasmarc], "Theme", "name")
+            .unwrap_or_default(),
         kvantum: read_ini(&kvconfig, "General", "theme").unwrap_or_default(),
         accent_color: read_ini(&kdeglobals, "General", "AccentColor")
             .and_then(|v| rgb_to_hex(&v))
             .unwrap_or_else(|| "#3daee9".to_string()),
     })
+}
+
+/// Read a key from the first file that has it (KDE config layering: main file
+/// wins, kdedefaults is the fallback).
+fn read_ini_merged(files: &[&Path], section: &str, key: &str) -> Option<String> {
+    files.iter().find_map(|f| read_ini(f, section, key))
 }
 
 /// Write a KDE look-and-feel (global theme) package from the assembled spec,
