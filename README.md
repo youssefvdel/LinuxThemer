@@ -1,32 +1,59 @@
-# React + TypeScript + Vite
+# LinuxThemer
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+> 🚧 **EARLY ALPHA — under active development.**
+> Most features are placeholders or only partially implemented. Do not expect a
+> stable, complete theme manager yet — this is a work in progress.
 
-Currently, two official plugins are available:
+A modern Linux theme manager for **KDE Plasma**: browse, preview, install, and
+apply themes from KDE-Look — global themes, icons, cursors, window decorations,
+color schemes, SDDM login themes, wallpapers, and more — in a clean dark UI.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+![LinuxThemer](tauri-shot.png)
 
-## React Compiler
+## Status
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**Alpha / pre-release.** The scaffold and the preview engine work; the rest is
+being built out.
 
-## Expanding the Oxlint configuration
+| Area | State |
+| --- | --- |
+| Browse KDE-Look catalog | ✅ working |
+| System-wide installed-theme scan | ✅ working |
+| Per-kind previews (cursors, icons, colors, decorations) | ✅ working |
+| Apply themes | ⚠️ partial |
+| Download + install | ⚠️ partial |
+| Settings (accent, theme dropdowns) | ⚠️ partial |
+| Studio (theme assembler) | 🚧 placeholder |
+| Favorites | 🚧 placeholder |
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## Features so far
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+- **Browse** KDE-Look's full catalog (icons, cursors, GTK, SDDM, wallpapers,
+  decorations, global themes, plasma themes, …)
+- **Installed** — system-wide scan grouped by category, with rich per-kind previews:
+  - **cursors** → real rendered cursor shapes (native Xcursor decoder in Rust)
+  - **icons** → sample icon grid
+  - **color schemes / GTK** → palette mock windows
+  - **window decorations** → window mockups with the theme's real titlebar buttons
+  - **global / plasma / SDDM / wallpapers** → on-disk preview images
+- **Settings** — per-component theme dropdowns + accent color picker
+
+## Tech stack
+
+- **Tauri 2** (Rust backend) + **React + TypeScript + Vite** (frontend)
+- Rust engine: theme scanning/apply, Xcursor decoding, SVG/video rasterization
+  via ffmpeg, KDE config read/write (with `kdedefaults` merge)
+
+## Development
+
+```bash
+npm install
+npm run tauri dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Requires Rust, Node 22, and the Tauri v2 toolchain. Linux-only — targets KDE
+Plasma (Kubuntu tested).
+
+## License
+
+[MIT](LICENSE)
