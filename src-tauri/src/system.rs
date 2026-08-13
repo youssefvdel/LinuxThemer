@@ -130,7 +130,38 @@ fn find_preview(dir: &Path, kind: &str) -> Option<String> {
 
 /// Find one icon by name across both common icon-theme layouts:
 /// `category/size/name.ext` (e.g. Amy-Dark: `places/32/folder.svg`) and
-/// `size/category/name.ext` (e.g. Adwaita/hicolor: `scalable/places/folder.svg`).
+/// Resolve the theme's lookup chain: the theme itself, its `Inherits=` parents
+/// (declared in `index.theme`), then the system fallbacks hicolor/breeze.
+/// This mirrors KIconLoader, so sparse themes (hicolor) still resolve icons.
+fn icon_chain(dir: &Path) -> Vec<PathBuf> {
+    let mut chain = vec![dir.to_path_buf()];
+    let mut inherits: Vec<String> = Vec::new();
+    if let Ok(text) = fs::read_to_string(dir.join("index.theme")) {
+        for line in text.lines() {
+            if let Some(rest) = line.trim().strip_prefix("Inherits=") {
+                inherits = rest
+                    .split(',')
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .collect();
+                break;
+            }
+        }
+    }
+    if let Some(root) = dir.parent() {
+        for name in inherits.iter().map(String::as_str).chain(["hicolor", "breeze", "breeze-dark"]) {
+            let p = root.join(name);
+            if p.is_dir() && !chain.contains(&p) {
+                chain.push(p);
+            }
+        }
+    }
+    chain
+}
+
+/// Find one icon by name across both common icon-theme layouts (`category/size/`
+/// and `size/category/`) and the theme's inheritance chain, matching KDE's
+/// PNG-first → SVG → SVGZ preference.
 fn find_icon(dir: &Path, name: &str) -> Option<PathBuf> {
     const SUBDIRS: &[&str] = &[
         "places",
@@ -163,23 +194,25 @@ fn find_icon(dir: &Path, name: &str) -> Option<PathBuf> {
         "256x256",
         "512x512",
     ];
-    for ext in ["png", "svg"] {
-        let fname = format!("{name}.{ext}");
-        // layout 1: category/size/name
-        for sub in SUBDIRS {
-            for size in SIZE_DIRS {
-                let p = dir.join(sub).join(size).join(&fname);
-                if p.is_file() {
-                    return Some(p);
+    for theme_dir in icon_chain(dir) {
+        for ext in ["png", "svg", "svgz"] {
+            let fname = format!("{name}.{ext}");
+            // layout 1: category/size/name
+            for sub in SUBDIRS {
+                for size in SIZE_DIRS {
+                    let p = theme_dir.join(sub).join(size).join(&fname);
+                    if p.is_file() {
+                        return Some(p);
+                    }
                 }
             }
-        }
-        // layout 2: size/category/name
-        for size in SIZE_DIRS {
-            for sub in SUBDIRS {
-                let p = dir.join(size).join(sub).join(&fname);
-                if p.is_file() {
-                    return Some(p);
+            // layout 2: size/category/name
+            for size in SIZE_DIRS {
+                for sub in SUBDIRS {
+                    let p = theme_dir.join(size).join(sub).join(&fname);
+                    if p.is_file() {
+                        return Some(p);
+                    }
                 }
             }
         }
@@ -497,15 +530,13 @@ fn xcursor_to_png(path: &Path) -> Option<String> {
     Some(out.to_string_lossy().to_string())
 }
 
-/// Render real cursors (arrow, hand, text, crosshair, resize, busy, help…) from
-/// a cursor theme so the card shows a KDE-Settings-style 3×3 cursor grid.
+/// Render real cursors from a cursor theme so the card shows a 3×3 cursor grid.
+/// Names are KDE's own preview set (plasma-workspace cursortheme PreviewWidget).
 fn find_cursor_samples(dir: &Path) -> Option<Vec<String>> {
     const NAMES: &[&str] = &[
-        "left_ptr", "default", "hand2", "pointer", "xterm", "text",
-        "crosshair", "cross", "size_all", "fleur",
-        "size_bdiag", "size_fdiag", "sb_h_double_arrow", "sb_v_double_arrow",
-        "watch", "progress", "wait", "help", "question_arrow",
-        "not-allowed", "forbidden", "link", "copy", "alias",
+        "left_ptr", "left_ptr_watch", "wait", "pointer", "help", "ibeam",
+        "size_all", "size_fdiag", "cross", "split_h", "size_ver", "size_hor",
+        "size_bdiag", "split_v",
     ];
     let cd = dir.join("cursors");
     let mut out: Vec<String> = vec![];
@@ -579,27 +610,20 @@ fn read_deco_color(dir: &Path) -> Option<Vec<String>> {
     }
 }
 
-/// Collect a handful of well-known icons (folder, home, apps…) from an icon
-/// theme so the card shows a KDE-Settings-style sample row.
+/// Collect the 6 preview icons KDE shows for an icon theme (3×2 grid), using
+/// KDE's own icon slots with per-slot fallbacks (plasma-workspace icons KCM).
 fn find_representative_icons(dir: &Path) -> Option<Vec<String>> {
-    const NAMES: &[&str] = &[
-        "folder",
-        "folder-open",
-        "home",
-        "user-home",
-        "system-file-manager",
-        "preferences-system",
-        "utilities-terminal",
-        "application-x-executable",
-        "input-keyboard",
-        "start-here",
-        "folder-documents",
-        "folder-download",
-        "user-trash",
+    const SLOTS: &[&[&str]] = &[
+        &["system-run", "exec"],
+        &["folder"],
+        &["document", "text-x-generic"],
+        &["user-trash", "user-trash-empty"],
+        &["help-browser", "system-help", "help-about", "help-contents"],
+        &["preferences-system", "systemsettings", "configure"],
     ];
-    let out: Vec<String> = NAMES
+    let out: Vec<String> = SLOTS
         .iter()
-        .filter_map(|name| find_icon(dir, name))
+        .filter_map(|names| names.iter().find_map(|name| find_icon(dir, name)))
         .take(6)
         .filter_map(|p| thumb_path_for(&p.to_string_lossy()))
         .collect();
