@@ -15,12 +15,17 @@ export function InstalledCard({ item, active, onApply, onRemove }: Props) {
   const [confirming, setConfirming] = useState(false);
   const kindLabel = INSTALLED_KIND_LABELS[item.kind] ?? item.kind;
   const src = item.preview ? convertFileSrc(item.preview) : null;
+  const isVideo = !!item.preview && /\.(mp4|webm)$/i.test(item.preview);
 
   return (
     <div className="installed-card">
       <div className="installed-thumb">
         {src ? (
-          <img src={src} alt={item.name} loading="lazy" decoding="async" />
+          isVideo ? (
+            <video src={src} muted loop playsInline preload="metadata" />
+          ) : (
+            <img src={src} alt={item.name} loading="lazy" decoding="async" />
+          )
         ) : (
           <span className="installed-thumb-fallback">{kindLabel}</span>
         )}

@@ -43,7 +43,9 @@ fn has_entry(dir: &Path, name: &str) -> bool {
     dir.join(name).exists()
 }
 
-fn first_image(dir: &Path) -> Option<PathBuf> {
+/// First image *or video* file in a directory. Theme previews are png/jpg/
+/// svg/webp/avif/gif, or mp4/webm for animated SDDM previews.
+fn first_media(dir: &Path) -> Option<PathBuf> {
     let rd = fs::read_dir(dir).ok()?;
     for e in rd.filter_map(|e| e.ok()) {
         let p = e.path();
@@ -52,7 +54,10 @@ fn first_image(dir: &Path) -> Option<PathBuf> {
         }
         if let Some(ext) = p.extension().and_then(|x| x.to_str()) {
             let e = ext.to_ascii_lowercase();
-            if matches!(e.as_str(), "png" | "jpg" | "jpeg" | "webp" | "svg") {
+            if matches!(
+                e.as_str(),
+                "png" | "jpg" | "jpeg" | "webp" | "svg" | "gif" | "avif" | "mp4" | "webm"
+            ) {
                 return Some(p);
             }
         }
@@ -60,10 +65,10 @@ fn first_image(dir: &Path) -> Option<PathBuf> {
     None
 }
 
-/// Recursive image lookup (bounded depth) for themes that store their preview
+/// Recursive media lookup (bounded depth) for themes that store their preview
 /// or screenshot in a non-standard subdirectory.
-fn find_image_deep(dir: &Path, depth: u8) -> Option<PathBuf> {
-    if let Some(p) = first_image(dir) {
+fn find_media_deep(dir: &Path, depth: u8) -> Option<PathBuf> {
+    if let Some(p) = first_media(dir) {
         return Some(p);
     }
     if depth == 0 {
@@ -77,7 +82,7 @@ fn find_image_deep(dir: &Path, depth: u8) -> Option<PathBuf> {
         .collect();
     subs.sort();
     for d in subs {
-        if let Some(p) = find_image_deep(&d, depth - 1) {
+        if let Some(p) = find_media_deep(&d, depth - 1) {
             return Some(p);
         }
     }
@@ -86,7 +91,7 @@ fn find_image_deep(dir: &Path, depth: u8) -> Option<PathBuf> {
 
 fn find_preview(dir: &Path) -> Option<String> {
     for sub in ["contents/previews", "contents/images", "previews", "images"] {
-        if let Some(p) = first_image(&dir.join(sub)) {
+        if let Some(p) = first_media(&dir.join(sub)) {
             return Some(p.to_string_lossy().to_string());
         }
     }
@@ -95,6 +100,10 @@ fn find_preview(dir: &Path) -> Option<String> {
         "preview.jpg",
         "preview.webp",
         "preview.svg",
+        "preview.avif",
+        "preview.gif",
+        "preview.mp4",
+        "preview.webm",
         "screenshot.png",
         "screenshot.jpg",
         "theme-preview.png",
@@ -105,7 +114,7 @@ fn find_preview(dir: &Path) -> Option<String> {
             return Some(p.to_string_lossy().to_string());
         }
     }
-    find_image_deep(dir, 3).map(|p| p.to_string_lossy().to_string())
+    find_media_deep(dir, 3).map(|p| p.to_string_lossy().to_string())
 }
 
 fn scan(kind: &str, roots: &[PathBuf], filter: impl Fn(&Path) -> bool) -> Vec<InstalledTheme> {

@@ -27,7 +27,10 @@
       "csp": null,
       "assetProtocol": {
         "enable": true,
-        "scope": ["$HOME/**", "/usr/share/**"]
+        "scope": {
+          "allow": ["$HOME/**", "/usr/share/**"],
+          "requireLiteralLeadingDot": false
+        }
       }
     }
   },

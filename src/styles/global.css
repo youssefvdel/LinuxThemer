@@ -1144,7 +1144,8 @@ textarea {
   aspect-ratio: 16 / 10;
   background: var(--surface-2);
 }
-.installed-thumb img {
+.installed-thumb img,
+.installed-thumb video {
   position: absolute;
   inset: 0;
   width: 100%;
