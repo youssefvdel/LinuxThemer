@@ -6,6 +6,7 @@ const nav = [
   { id: "browse", label: "Browse", icon: "✦" },
   { id: "installed", label: "Installed", icon: "✓" },
   { id: "favorites", label: "Favorites", icon: "♡" },
+  { id: "studio", label: "Studio", icon: "✎" },
 ] as const;
 
 interface Props {

@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { Theme } from "../types/theme";
 import { wallpaperBackground, fmtDownloads } from "../lib/format";
 import { Stars } from "./Stars";
-import { DownloadIcon, CheckIcon, HeartIcon } from "./Icon";
+import { DownloadIcon, CheckIcon, HeartIcon, LeftIcon, RightIcon } from "./Icon";
 
 interface Props {
   theme: Theme;
@@ -26,36 +26,44 @@ export function ThemeCard({
     : theme.preview
       ? [theme.preview]
       : [];
-  const [hovering, setHovering] = useState(false);
   const [idx, setIdx] = useState(0);
-
-  // Cycle through preview images while hovered.
-  useEffect(() => {
-    if (!hovering || images.length < 2) return;
-    const t = setInterval(() => setIdx((i) => (i + 1) % images.length), 1600);
-    return () => clearInterval(t);
-  }, [hovering, images.length]);
-
   const current = images[idx];
 
+  const step = (dir: number) =>
+    setIdx((i) => (i + dir + images.length) % images.length);
+
   return (
-    <article
-      className="card"
-      onMouseEnter={() => setHovering(true)}
-      onMouseLeave={() => {
-        setHovering(false);
-        setIdx(0);
-      }}
-      onClick={() => onOpen(theme)}
-    >
+    <article className="card" onClick={() => onOpen(theme)}>
       <div className="card-thumb" style={{ background: wallpaperBackground(theme) }}>
         {current && <img className="thumb-img" src={current} alt={theme.name} loading="lazy" />}
         {images.length > 1 && (
-          <div className="img-dots">
-            {images.map((_, i) => (
-              <span key={i} className={`dot ${i === idx ? "on" : ""}`} />
-            ))}
-          </div>
+          <>
+            <div className="img-dots">
+              {images.map((_, i) => (
+                <span key={i} className={`dot ${i === idx ? "on" : ""}`} />
+              ))}
+            </div>
+            <button
+              className="img-arrow left"
+              aria-label="Previous image"
+              onClick={(e) => {
+                e.stopPropagation();
+                step(-1);
+              }}
+            >
+              <LeftIcon />
+            </button>
+            <button
+              className="img-arrow right"
+              aria-label="Next image"
+              onClick={(e) => {
+                e.stopPropagation();
+                step(1);
+              }}
+            >
+              <RightIcon />
+            </button>
+          </>
         )}
         <button
           className={`fav-btn ${favorite ? "on" : ""}`}

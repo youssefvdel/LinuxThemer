@@ -1,6 +1,6 @@
 export type SortId = "popular" | "rating" | "name";
 
-export type View = "browse" | "installed" | "favorites" | "detail";
+export type View = "browse" | "installed" | "favorites" | "detail" | "studio";
 
 export type ApplyComponentId =
   | "gtk"
@@ -44,3 +44,25 @@ export interface Theme {
   palette?: string[];
   accent?: string;
 }
+
+/** A theme discovered on this device (filesystem scan). */
+export interface InstalledTheme {
+  id: string;
+  name: string;
+  kind: string;
+  path: string;
+}
+
+export const INSTALLED_KIND_LABELS: Record<string, string> = {
+  global: "Global Themes",
+  gtk: "GTK Themes",
+  plasma: "Plasma Themes",
+  icons: "Icons",
+  cursors: "Cursors",
+  decorations: "Decorations",
+  colors: "Color Schemes",
+  sddm: "SDDM",
+  wallpapers: "Wallpapers",
+  kvantum: "Kvantum",
+  custom: "Custom",
+};

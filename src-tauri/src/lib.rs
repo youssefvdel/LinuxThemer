@@ -1,5 +1,7 @@
 use reqwest::Url;
 
+mod system;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut builder = tauri::Builder::default();
@@ -10,7 +12,12 @@ pub fn run() {
     }
 
     builder
-        .invoke_handler(tauri::generate_handler![fetch_themes])
+        .invoke_handler(tauri::generate_handler![
+            fetch_themes,
+            system::list_installed,
+            system::save_current_theme,
+            system::launch_studio
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

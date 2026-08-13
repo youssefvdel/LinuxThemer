@@ -1,11 +1,20 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchStore, STORE_CATEGORIES } from "./lib/store";
-import { APPLY_COMPONENTS, type SortId, type Theme, type View } from "./types/theme";
+import { fetchInstalled, saveCurrentTheme, launchStudio } from "./lib/installed";
+import {
+  APPLY_COMPONENTS,
+  INSTALLED_KIND_LABELS,
+  type InstalledTheme,
+  type SortId,
+  type Theme,
+  type View,
+} from "./types/theme";
 import { Sidebar } from "./components/Sidebar";
 import { Topbar } from "./components/Topbar";
 import { ThemeGrid } from "./components/ThemeGrid";
 import { ApplyModal } from "./components/ApplyModal";
 import { ThemeDetail } from "./components/ThemeDetail";
+import { InstalledCard } from "./components/InstalledCard";
 
 function loadThemes(key: string): Map<string, Theme> {
   try {
@@ -15,6 +24,28 @@ function loadThemes(key: string): Map<string, Theme> {
     return new Map();
   }
 }
+
+const INSTALLED_ORDER = [
+  "global",
+  "gtk",
+  "plasma",
+  "icons",
+  "cursors",
+  "decorations",
+  "colors",
+  "sddm",
+  "wallpapers",
+  "kvantum",
+  "custom",
+];
+
+const STUDIO_TOOLS = [
+  { kind: "gtk", label: "GTK Theme Creator", desc: "Oomox — design & recolor GTK3/GTK4 themes" },
+  { kind: "plasma", label: "Plasma Look & Feel", desc: "KDE settings — global theme, splash, lockscreen" },
+  { kind: "colors", label: "Plasma Color Schemes", desc: "KDE settings — color scheme editor" },
+  { kind: "cursors", label: "Cursor Themes", desc: "KDE settings — cursor theme picker" },
+  { kind: "icons", label: "Icon Themes", desc: "KDE settings — icon theme picker" },
+];
 
 export default function App() {
   const [view, setView] = useState<View>("browse");
@@ -37,8 +68,15 @@ export default function App() {
   const [components, setComponents] = useState<Set<string>>(
     new Set(APPLY_COMPONENTS.map((c) => c.id))
   );
+  const [installedList, setInstalledList] = useState<InstalledTheme[]>([]);
+  const [installedTab, setInstalledTab] = useState("global");
+  const [showSave, setShowSave] = useState(false);
+  const [saveName, setSaveName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState("");
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const mainRef = useRef<HTMLDivElement | null>(null);
 
   // Persist installed + favorites (full theme objects, not just ids).
   useEffect(() => {
@@ -47,6 +85,20 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("lt.favorites", JSON.stringify([...favorites.values()]));
   }, [favorites]);
+
+  // Device scan: once on mount, then refresh whenever entering Installed view.
+  useEffect(() => {
+    fetchInstalled().then(setInstalledList).catch(() => setInstalledList([]));
+  }, []);
+  useEffect(() => {
+    if (view !== "installed") return;
+    fetchInstalled().then(setInstalledList).catch(() => setInstalledList([]));
+  }, [view]);
+
+  // Scroll to top whenever the view / category / installed tab changes.
+  useEffect(() => {
+    mainRef.current?.querySelector(".content")?.scrollTo({ top: 0 });
+  }, [view, category, installedTab]);
 
   // Fetch first page whenever category / search / sort changes (browse only).
   useEffect(() => {
@@ -153,6 +205,52 @@ export default function App() {
     setView("browse");
   };
 
+  const grouped = useMemo(() => {
+    const m = new Map<string, InstalledTheme[]>();
+    for (const t of installedList) {
+      const arr = m.get(t.kind) ?? [];
+      arr.push(t);
+      m.set(t.kind, arr);
+    }
+    return m;
+  }, [installedList]);
+
+  const installedKinds = useMemo(() => {
+    const present = new Set(grouped.keys());
+    const ordered = INSTALLED_ORDER.filter((k) => present.has(k));
+    const extra = [...present].filter((k) => !INSTALLED_ORDER.includes(k));
+    return [...ordered, ...extra];
+  }, [grouped]);
+
+  const doSave = async () => {
+    const name = saveName.trim();
+    if (!name || saving) return;
+    setSaving(true);
+    setNotice("");
+    try {
+      await saveCurrentTheme(name);
+      setSaveName("");
+      setShowSave(false);
+      const list = await fetchInstalled();
+      setInstalledList(list);
+      setInstalledTab("custom");
+    } catch (e) {
+      setNotice(String(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const launch = async (kind: string) => {
+    setNotice("");
+    try {
+      await launchStudio(kind);
+      setNotice("Launched.");
+    } catch (e) {
+      setNotice(String(e));
+    }
+  };
+
   const categoryLabel =
     STORE_CATEGORIES.find((c) => c.id === category)?.label ?? "Themes";
 
@@ -164,10 +262,10 @@ export default function App() {
         onSelectCategory={selectCategory}
         view={view}
         onSelectView={setView}
-        installedCount={installed.size}
+        installedCount={installedList.length}
         favoritesCount={favorites.size}
       />
-      <div className="main">
+      <div className="main" ref={mainRef}>
         {view === "browse" && (
           <>
             <Topbar
@@ -211,19 +309,61 @@ export default function App() {
           <div className="content">
             <div className="section-head">
               <h3>Installed</h3>
-              <span className="hint">{installed.size} themes</span>
+              <span className="hint">{installedList.length} on this device</span>
+              <div className="head-actions">
+                {showSave ? (
+                  <div className="save-bar">
+                    <input
+                      autoFocus
+                      placeholder="Theme name…"
+                      value={saveName}
+                      onChange={(e) => setSaveName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") doSave();
+                        if (e.key === "Escape") setShowSave(false);
+                      }}
+                    />
+                    <button
+                      className="btn btn-primary"
+                      onClick={doSave}
+                      disabled={!saveName.trim() || saving}
+                    >
+                      {saving ? "Saving…" : "Save"}
+                    </button>
+                    <button className="btn btn-ghost" onClick={() => setShowSave(false)}>
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button className="btn btn-ghost" onClick={() => setShowSave(true)}>
+                    Save current theme
+                  </button>
+                )}
+              </div>
             </div>
-            {installed.size === 0 ? (
-              <div className="empty">Nothing installed yet. Apply a theme to see it here.</div>
+            {notice && <div className="notice">{notice}</div>}
+            {installedKinds.length === 0 ? (
+              <div className="empty">No themes found on this device.</div>
             ) : (
-              <ThemeGrid
-                themes={[...installed.values()]}
-                installed={installed}
-                favorites={favorites}
-                onOpen={openDetail}
-                onApply={openApply}
-                onToggleFavorite={toggleFavorite}
-              />
+              <>
+                <div className="tabs">
+                  {installedKinds.map((k) => (
+                    <button
+                      key={k}
+                      className={`tab ${installedTab === k ? "active" : ""}`}
+                      onClick={() => setInstalledTab(k)}
+                    >
+                      {INSTALLED_KIND_LABELS[k] ?? k}
+                      <span className="tab-count">{grouped.get(k)?.length ?? 0}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="installed-grid">
+                  {(grouped.get(installedTab) ?? []).map((it) => (
+                    <InstalledCard key={it.id} item={it} />
+                  ))}
+                </div>
+              </>
             )}
           </div>
         )}
@@ -246,6 +386,24 @@ export default function App() {
                 onToggleFavorite={toggleFavorite}
               />
             )}
+          </div>
+        )}
+
+        {view === "studio" && (
+          <div className="content">
+            <div className="section-head">
+              <h3>Theme Studio</h3>
+              <span className="hint">Open the desktop's own theme creators</span>
+            </div>
+            {notice && <div className="notice">{notice}</div>}
+            <div className="studio-grid">
+              {STUDIO_TOOLS.map((t) => (
+                <button key={t.kind} className="studio-card" onClick={() => launch(t.kind)}>
+                  <div className="studio-name">{t.label}</div>
+                  <div className="studio-desc">{t.desc}</div>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
