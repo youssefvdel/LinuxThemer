@@ -30,3 +30,8 @@ src-tauri/gen
 /shot.png
 /linuxthemer-shot.png
 .stignore
+/live-store.png
+/tauri-shot.png
+
+# syncthing marker
+.stfolder/
