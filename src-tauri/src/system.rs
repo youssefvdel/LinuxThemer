@@ -275,11 +275,27 @@ pub fn list_installed() -> Result<Vec<InstalledTheme>, String> {
     Ok(all)
 }
 
-/// Remove an installed theme from disk (any location — user or system).
-/// System paths under /usr/share need root; the error surfaces to the UI.
+/// Remove an installed theme from disk. User paths are deleted directly;
+/// system paths (outside $HOME) are elevated through polkit so the user gets
+/// a graphical auth prompt instead of a raw permission error.
 #[tauri::command]
 pub fn remove_installed(path: String) -> Result<(), String> {
     let p = PathBuf::from(&path);
+    let h = home();
+
+    if !p.starts_with(&h) {
+        let status = Command::new("pkexec")
+            .arg("rm")
+            .arg("-rf")
+            .arg(&path)
+            .status()
+            .map_err(|e| format!("pkexec unavailable: {e}"))?;
+        if !status.success() {
+            return Err(format!("removal failed (pkexec exited {status})"));
+        }
+        return Ok(());
+    }
+
     if p.is_dir() {
         fs::remove_dir_all(&p).map_err(|e| e.to_string())
     } else if p.is_file() {
