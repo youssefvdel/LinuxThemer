@@ -63,7 +63,7 @@ fn first_media(dir: &Path) -> Option<PathBuf> {
     // may lack AVIF, and mp4/webm need a <video> element).
     files
         .iter()
-        .find(|p| is(p, &["png", "jpg", "jpeg", "webp", "svg", "gif"]))
+        .find(|p| is(p, &["png", "jpg", "jpeg", "webp", "svg", "svgz", "gif"]))
         .or_else(|| files.iter().find(|p| is(p, &["avif", "mp4", "webm"])))
         .cloned()
 }
@@ -92,32 +92,111 @@ fn find_media_deep(dir: &Path, depth: u8) -> Option<PathBuf> {
     None
 }
 
-fn find_preview(dir: &Path) -> Option<String> {
-    for sub in ["contents/previews", "contents/images", "previews", "images"] {
-        if let Some(p) = first_media(&dir.join(sub)) {
-            return Some(p.to_string_lossy().to_string());
+fn named_file(dir: &Path, names: &[&str]) -> Option<PathBuf> {
+    names.iter().map(|n| dir.join(n)).find(|p| p.is_file())
+}
+
+/// Kind-specific preview discovery, based on how each KDE/XDG theme type
+/// actually stores its preview on disk (verified against real installs):
+/// - global:     contents/previews/*.{png,jpg}
+/// - sddm:       preview.png/screenshot.png at root, else backgrounds/*.mp4
+/// - wallpapers: contents/screenshot.png, else contents/images/* (raster first)
+/// - plasma:     root preview.*, else dialogs/background.svg (theme look)
+/// - decorations: root preview.*, else decoration.svg
+/// - kvantum:    <theme>.svg at root
+/// - icons:      a representative icon (folder/home/known app) as a sample
+/// - gtk/colors/cursors: no preview convention -> None (palette/label instead)
+fn find_preview(dir: &Path, kind: &str) -> Option<String> {
+    let found = match kind {
+        "global" => first_media(&dir.join("contents/previews")).or_else(|| {
+            named_file(dir, &["preview.png", "fullscreenpreview.jpg", "screenshot.png"])
+        }),
+        "sddm" => named_file(dir, &["preview.png", "preview.jpg", "screenshot.png"])
+            .or_else(|| first_media(&dir.join("backgrounds")))
+            .or_else(|| find_media_deep(dir, 3)),
+        "wallpapers" => named_file(&dir.join("contents"), &["screenshot.png", "preview.png"])
+            .or_else(|| first_media(&dir.join("contents/images")))
+            .or_else(|| first_media(&dir.join("contents/images_dark"))),
+        "plasma" => named_file(dir, &["preview.png", "preview.jpg", "screenshot.png"])
+            .or_else(|| named_file(&dir.join("dialogs"), &["background.svg", "background.svgz"]))
+            .or_else(|| first_media(&dir.join("dialogs"))),
+        "decorations" => named_file(dir, &["preview.png", "preview.jpg", "screenshot.png"])
+            .or_else(|| named_file(dir, &["decoration.svg"])),
+        "kvantum" => first_media(dir),
+        "icons" => find_representative_icon(dir),
+        _ => None,
+    };
+    found.map(|p| p.to_string_lossy().to_string())
+}
+
+/// Pick a representative icon from an icon theme (folder/home/known app), so the
+/// pack shows a real sample instead of a random file.
+fn find_representative_icon(dir: &Path) -> Option<PathBuf> {
+    const NAMES: &[&str] = &[
+        "folder",
+        "folder-open",
+        "home",
+        "user-home",
+        "system-file-manager",
+        "start-here",
+        "preferences-system",
+        "utilities-terminal",
+        "application-x-executable",
+        "input-keyboard",
+    ];
+    const SUBDIRS: &[&str] = &["places", "apps", "devices", "actions"];
+    const SIZES: &[&str] = &["scalable", "48", "32", "24", "22", "16", "64", "128"];
+    for sub in SUBDIRS {
+        for size in SIZES {
+            for name in NAMES {
+                for ext in ["svg", "png"] {
+                    let p = dir.join(sub).join(size).join(format!("{name}.{ext}"));
+                    if p.is_file() {
+                        return Some(p);
+                    }
+                }
+            }
         }
     }
-    for fname in [
-        "preview.png",
-        "preview.jpg",
-        "preview.webp",
-        "preview.svg",
-        "preview.avif",
-        "preview.gif",
-        "preview.mp4",
-        "preview.webm",
-        "screenshot.png",
-        "screenshot.jpg",
-        "theme-preview.png",
-        "theme-preview.jpg",
-    ] {
-        let p = dir.join(fname);
-        if p.is_file() {
-            return Some(p.to_string_lossy().to_string());
+    None
+}
+
+/// Extract colors from a GTK theme's `gtk-3.0/gtk.css` (@define-color) for
+/// palette swatches — GTK themes have no screenshot convention.
+fn read_gtk_palette(dir: &Path) -> Option<Vec<String>> {
+    let text = fs::read_to_string(dir.join("gtk-3.0/gtk.css")).ok()?;
+    let mut colors: Vec<String> = vec![];
+    for line in text.lines() {
+        let line = line.trim();
+        if !line.starts_with("@define-color") {
+            continue;
+        }
+        let rest = line.trim_start_matches("@define-color");
+        let value = rest.split_whitespace().nth(1).unwrap_or("").trim_end_matches(';');
+        let v = value.to_ascii_lowercase();
+        let hex = if v.starts_with('#') && v.len() == 7 {
+            Some(v)
+        } else if v == "white" {
+            Some("#ffffff".to_string())
+        } else if v == "black" {
+            Some("#000000".to_string())
+        } else {
+            None
+        };
+        if let Some(h) = hex {
+            if !colors.contains(&h) {
+                colors.push(h);
+            }
+        }
+        if colors.len() >= 6 {
+            break;
         }
     }
-    find_media_deep(dir, 3).map(|p| p.to_string_lossy().to_string())
+    if colors.is_empty() {
+        None
+    } else {
+        Some(colors)
+    }
 }
 
 /// Cache dir for generated preview thumbnails.
@@ -133,7 +212,7 @@ fn thumb_path_for(path: &str) -> Option<String> {
         .extension()
         .and_then(|x| x.to_str())
         .map(|s| s.to_ascii_lowercase())?;
-    if !matches!(ext.as_str(), "svg" | "mp4" | "webm") {
+    if !matches!(ext.as_str(), "svg" | "svgz" | "mp4" | "webm" | "avif") {
         return Some(path.to_string());
     }
     let mut hasher = DefaultHasher::new();
@@ -202,8 +281,12 @@ fn scan(kind: &str, roots: &[PathBuf], filter: impl Fn(&Path) -> bool) -> Vec<In
                 name,
                 kind: kind.to_string(),
                 path: d.to_string_lossy().to_string(),
-                preview: find_preview(&d).and_then(|p| thumb_path_for(&p)),
-                palette: None,
+                preview: find_preview(&d, kind).and_then(|p| thumb_path_for(&p)),
+                palette: if kind == "gtk" {
+                    read_gtk_palette(&d)
+                } else {
+                    None
+                },
             });
         }
     }
