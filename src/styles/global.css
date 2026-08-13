@@ -121,6 +121,18 @@ body {
   color: #fff;
 }
 
+/* ---- native resize handles (borderless window) ---- */
+.rz {
+  position: fixed;
+  z-index: 40;
+  background: transparent;
+}
+.rz-w { top: 40px; left: 0; bottom: 0; width: 5px; cursor: ew-resize; }
+.rz-e { top: 40px; right: 0; bottom: 0; width: 5px; cursor: ew-resize; }
+.rz-s { bottom: 0; left: 0; right: 0; height: 5px; cursor: ns-resize; }
+.rz-sw { bottom: 0; left: 0; width: 12px; height: 12px; cursor: nesw-resize; }
+.rz-se { bottom: 0; right: 0; width: 12px; height: 12px; cursor: nwse-resize; }
+
 /* ---- app shell ---- */
 .app {
   display: grid;
