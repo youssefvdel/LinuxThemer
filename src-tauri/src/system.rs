@@ -1016,3 +1016,66 @@ pub fn launch_studio(kind: String) -> Result<String, String> {
         .map_err(|e| format!("couldn't launch {bin}: {e}"))?;
     Ok(format!("launched {bin}"))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Build a synthetic "Xcur" file matching the empirically-verified layout:
+    /// 16B file header, 12B TOC, chunk = 16B header + 20B image header + pixels.
+    fn make_xcursor() -> Vec<u8> {
+        let mut b = Vec::new();
+        b.extend_from_slice(&0x72756358u32.to_le_bytes()); // "Xcur"
+        b.extend_from_slice(&16u32.to_le_bytes()); // header size
+        b.extend_from_slice(&0x0001_0000u32.to_le_bytes()); // version (as real files store it)
+        b.extend_from_slice(&1u32.to_le_bytes()); // ntoc
+        // TOC: one image chunk, nominal size 16, at position 28
+        b.extend_from_slice(&0xfffd_0002u32.to_le_bytes());
+        b.extend_from_slice(&16u32.to_le_bytes());
+        b.extend_from_slice(&28u32.to_le_bytes());
+        // chunk header (16B): header=36, type, subtype=16, version=1
+        b.extend_from_slice(&36u32.to_le_bytes());
+        b.extend_from_slice(&0xfffd_0002u32.to_le_bytes());
+        b.extend_from_slice(&16u32.to_le_bytes());
+        b.extend_from_slice(&1u32.to_le_bytes());
+        // image header (20B): size, width, xhot, yhot, delay
+        b.extend_from_slice(&16u32.to_le_bytes());
+        b.extend_from_slice(&16u32.to_le_bytes());
+        b.extend_from_slice(&3u32.to_le_bytes());
+        b.extend_from_slice(&1u32.to_le_bytes());
+        b.extend_from_slice(&40u32.to_le_bytes());
+        // pixels: 16x16 ARGB (first pixel transparent, rest opaque teal)
+        for i in 0..16 * 16 {
+            let a = if i == 0 { 0 } else { 0xff };
+            b.extend_from_slice(&(a << 24 | 0x10_20_30u32).to_le_bytes());
+        }
+        b
+    }
+
+    #[test]
+    fn xcursor_decode_roundtrip() {
+        let dir = std::env::temp_dir().join("lt-xcursor-test");
+        std::fs::create_dir_all(&dir).unwrap();
+        let f = dir.join("test_cursor");
+        std::fs::write(&f, make_xcursor()).unwrap();
+
+        let png = xcursor_to_png(&f).expect("should decode the synthetic Xcursor file");
+        assert!(std::path::Path::new(&png).exists(), "PNG should be written");
+
+        // second call must hit the cache (same canonical path => same key)
+        let again = xcursor_to_png(&f).unwrap();
+        assert_eq!(png, again, "cached PNG path should be reused");
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn xcursor_rejects_garbage() {
+        let dir = std::env::temp_dir().join("lt-xcursor-test2");
+        std::fs::create_dir_all(&dir).unwrap();
+        let f = dir.join("not_a_cursor");
+        std::fs::write(&f, b"this is not an Xcursor file at all").unwrap();
+        assert!(xcursor_to_png(&f).is_none());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+}
