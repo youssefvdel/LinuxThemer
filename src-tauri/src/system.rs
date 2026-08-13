@@ -437,8 +437,10 @@ fn xcursor_to_png(path: &Path) -> Option<String> {
         }
     }
     let (_, subtype, pos) = best?;
-    let width = u32::from_le_bytes(bytes[pos + 20..pos + 24].try_into().ok()?) as usize;
-    let height = subtype as usize;
+    // Image header (20B at pos+16): width, height, xhot, yhot, delay.
+    // Nominal size = chunk subtype; actual pixel dims = width × height.
+    let width = u32::from_le_bytes(bytes[pos + 16..pos + 20].try_into().ok()?) as usize;
+    let height = u32::from_le_bytes(bytes[pos + 20..pos + 24].try_into().ok()?) as usize;
     let px_start = pos + 36;
     let n = width.saturating_mul(height);
     if width == 0 || height == 0 || px_start + n * 4 > bytes.len() {
@@ -1038,14 +1040,15 @@ mod tests {
         b.extend_from_slice(&0xfffd_0002u32.to_le_bytes());
         b.extend_from_slice(&16u32.to_le_bytes());
         b.extend_from_slice(&1u32.to_le_bytes());
-        // image header (20B): size, width, xhot, yhot, delay
-        b.extend_from_slice(&16u32.to_le_bytes());
-        b.extend_from_slice(&16u32.to_le_bytes());
-        b.extend_from_slice(&3u32.to_le_bytes());
-        b.extend_from_slice(&1u32.to_le_bytes());
-        b.extend_from_slice(&40u32.to_le_bytes());
-        // pixels: 16x16 ARGB (first pixel transparent, rest opaque teal)
-        for i in 0..16 * 16 {
+        // image header (20B): width, height, xhot, yhot, delay — NON-square to catch
+        // any width/height swap (this exact bug shipped and broke KDE_Classic)
+        b.extend_from_slice(&10u32.to_le_bytes()); // width
+        b.extend_from_slice(&16u32.to_le_bytes()); // height
+        b.extend_from_slice(&3u32.to_le_bytes()); // xhot
+        b.extend_from_slice(&1u32.to_le_bytes()); // yhot
+        b.extend_from_slice(&40u32.to_le_bytes()); // delay
+        // pixels: 10x16 ARGB (first pixel transparent, rest opaque teal)
+        for i in 0..10 * 16 {
             let a = if i == 0 { 0 } else { 0xff };
             b.extend_from_slice(&(a << 24 | 0x10_20_30u32).to_le_bytes());
         }
