@@ -1,5 +1,7 @@
 export type SortId = "popular" | "rating" | "name";
 
+export type View = "browse" | "installed" | "favorites" | "detail";
+
 export type ApplyComponentId =
   | "gtk"
   | "qt"
@@ -33,6 +35,8 @@ export interface Theme {
   description: string;
   /** Screenshot / preview image URL (from OCS). */
   preview?: string;
+  /** All preview images (hover gallery + detail page). */
+  images?: string[];
   /** Archive download URL (from OCS). */
   downloadUrl?: string;
   /** Curated gradient fallback (only for bundled seed themes). */

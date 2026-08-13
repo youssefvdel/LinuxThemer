@@ -24,6 +24,7 @@ async fn fetch_themes(
     category: String,
     page: u32,
     search: String,
+    sortmode: String,
 ) -> Result<serde_json::Value, String> {
     let mut url = Url::parse(OCS_BASE).map_err(|e| e.to_string())?;
     {
@@ -31,6 +32,7 @@ async fn fetch_themes(
         q.append_pair("categories", &category);
         q.append_pair("page", &page.to_string());
         q.append_pair("pagesize", "30");
+        q.append_pair("sortmode", &sortmode);
         q.append_pair("format", "json");
         if !search.trim().is_empty() {
             q.append_pair("search", search.trim());

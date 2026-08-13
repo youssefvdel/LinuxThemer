@@ -1,19 +1,32 @@
 import { SparkIcon } from "./Icon";
 import type { StoreCategory } from "../lib/store";
+import type { View } from "../types/theme";
 
 const nav = [
-  { label: "Browse", icon: "✦", active: true },
-  { label: "Installed", icon: "✓", active: false },
-  { label: "Favorites", icon: "♡", active: false },
-];
+  { id: "browse", label: "Browse", icon: "✦" },
+  { id: "installed", label: "Installed", icon: "✓" },
+  { id: "favorites", label: "Favorites", icon: "♡" },
+] as const;
 
 interface Props {
   categories: StoreCategory[];
   activeCategory: string;
   onSelectCategory: (id: string) => void;
+  view: View;
+  onSelectView: (v: View) => void;
+  installedCount: number;
+  favoritesCount: number;
 }
 
-export function Sidebar({ categories, activeCategory, onSelectCategory }: Props) {
+export function Sidebar({
+  categories,
+  activeCategory,
+  onSelectCategory,
+  view,
+  onSelectView,
+  installedCount,
+  favoritesCount,
+}: Props) {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -26,9 +39,15 @@ export function Sidebar({ categories, activeCategory, onSelectCategory }: Props)
       </div>
 
       {nav.map((n) => (
-        <div key={n.label} className={`nav-item ${n.active ? "active" : ""}`}>
+        <div
+          key={n.id}
+          className={`nav-item ${view === n.id ? "active" : ""}`}
+          onClick={() => onSelectView(n.id)}
+        >
           <span>{n.icon}</span>
           {n.label}
+          {n.id === "installed" && <span className="count">{installedCount}</span>}
+          {n.id === "favorites" && <span className="count">{favoritesCount}</span>}
         </div>
       ))}
 
@@ -36,7 +55,7 @@ export function Sidebar({ categories, activeCategory, onSelectCategory }: Props)
       {categories.map((c) => (
         <div
           key={c.id}
-          className={`nav-item ${activeCategory === c.id ? "active" : ""}`}
+          className={`nav-item ${view === "browse" && activeCategory === c.id ? "active" : ""}`}
           onClick={() => onSelectCategory(c.id)}
         >
           {c.label}

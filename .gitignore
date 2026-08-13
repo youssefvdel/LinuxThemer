@@ -29,3 +29,4 @@ src-tauri/gen
 
 /shot.png
 /linuxthemer-shot.png
+.stignore
