@@ -1,8 +1,10 @@
 //! Local system introspection + integration: installed-theme discovery,
 //! current-theme snapshot, and launching external theme creators.
 
+use std::collections::hash_map::DefaultHasher;
 use std::collections::HashSet;
 use std::fs;
+use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -118,6 +120,68 @@ fn find_preview(dir: &Path) -> Option<String> {
     find_media_deep(dir, 3).map(|p| p.to_string_lossy().to_string())
 }
 
+/// Cache dir for generated preview thumbnails.
+fn thumb_cache_dir() -> PathBuf {
+    home().join(".cache/linuxthemer/previews")
+}
+
+/// Rasterize svg/video previews to a cached PNG thumbnail (ffmpeg handles both),
+/// so WebKitGTK reliably renders them. Raster formats pass through untouched.
+fn thumb_path_for(path: &str) -> Option<String> {
+    let orig = Path::new(path);
+    let ext = orig
+        .extension()
+        .and_then(|x| x.to_str())
+        .map(|s| s.to_ascii_lowercase())?;
+    if !matches!(ext.as_str(), "svg" | "mp4" | "webm") {
+        return Some(path.to_string());
+    }
+    let mut hasher = DefaultHasher::new();
+    orig.to_string_lossy().hash(&mut hasher);
+    let hash = hasher.finish();
+    let dir = thumb_cache_dir();
+    let _ = fs::create_dir_all(&dir);
+    let out = dir.join(format!("{hash:016x}.png"));
+    if out.exists() {
+        return Some(out.to_string_lossy().to_string());
+    }
+    let ok = Command::new("ffmpeg")
+        .arg("-y")
+        .arg("-loglevel")
+        .arg("error")
+        .arg("-i")
+        .arg(orig)
+        .arg("-frames:v")
+        .arg("1")
+        .arg("-vf")
+        .arg("scale=640:-2")
+        .arg(&out)
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false);
+    if ok {
+        Some(out.to_string_lossy().to_string())
+    } else {
+        // ffmpeg failed — fall back to the original (browser may still render it).
+        Some(path.to_string())
+    }
+}
+
+/// A real icon theme has `index.theme` plus icon-size/category directories.
+/// Cursor themes also ship `index.theme` but only a `cursors/` dir, so this
+/// keeps them out of the Icons tab.
+fn is_icon_theme(dir: &Path) -> bool {
+    if !has_entry(dir, "index.theme") {
+        return false;
+    }
+    const ICON_DIRS: &[&str] = &[
+        "scalable", "apps", "actions", "categories", "places", "devices", "mimetypes",
+        "status", "emblems", "animations", "panel", "preferences", "symbolic", "16x16",
+        "22x22", "24x24", "32x32", "48x48", "64x64", "128x128", "256x256", "512x512",
+    ];
+    ICON_DIRS.iter().any(|n| has_entry(dir, n))
+}
+
 fn scan(kind: &str, roots: &[PathBuf], filter: impl Fn(&Path) -> bool) -> Vec<InstalledTheme> {
     let mut seen = HashSet::new();
     let mut out = vec![];
@@ -138,7 +202,7 @@ fn scan(kind: &str, roots: &[PathBuf], filter: impl Fn(&Path) -> bool) -> Vec<In
                 name,
                 kind: kind.to_string(),
                 path: d.to_string_lossy().to_string(),
-                preview: find_preview(&d),
+                preview: find_preview(&d).and_then(|p| thumb_path_for(&p)),
                 palette: None,
             });
         }
@@ -300,7 +364,7 @@ pub fn list_installed() -> Result<Vec<InstalledTheme>, String> {
             h.join(".local/share/icons"),
             PathBuf::from("/usr/share/icons"),
         ],
-        |d| has_entry(d, "index.theme"),
+        is_icon_theme,
     ));
     all.extend(scan(
         "cursors",
