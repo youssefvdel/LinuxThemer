@@ -143,16 +143,17 @@ export default function App() {
     loadMoreRef.current = loadMore;
   });
 
-  // Infinite scroll (browse only).
+  // Infinite scroll (browse only) — observe against the real scroll container.
   useEffect(() => {
     if (view !== "browse") return;
+    const scrollEl = mainRef.current?.querySelector(".content") as HTMLElement | null;
     const el = sentinelRef.current;
-    if (!el) return;
+    if (!el || !scrollEl) return;
     const obs = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) loadMoreRef.current();
       },
-      { rootMargin: "600px" }
+      { root: scrollEl, rootMargin: "600px" }
     );
     obs.observe(el);
     return () => obs.disconnect();
