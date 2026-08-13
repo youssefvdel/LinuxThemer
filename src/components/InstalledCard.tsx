@@ -90,7 +90,7 @@ export function InstalledCard({ item, active, onApply, onRemove }: Props) {
           isVideo ? (
             <video src={src} muted loop playsInline preload="metadata" />
           ) : (
-            <img src={src} alt={item.name} loading="lazy" decoding="async" />
+            <img src={src} alt={item.name} decoding="async" />
           )
         ) : item.kind === "cursors" && samples.length ? (
           <div className="cursor-box">
