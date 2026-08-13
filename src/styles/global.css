@@ -1225,35 +1225,41 @@ textarea {
   opacity: 0.45;
   text-decoration: line-through;
 }
-/* cursor theme preview: light test box with real rendered cursors */
+/* cursor theme preview: light test box with real rendered cursors (grid) */
 .cursor-box {
   position: absolute;
   inset: 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
   align-items: center;
-  justify-content: center;
-  gap: 16px;
+  justify-items: center;
+  gap: 2px;
+  padding: 8px;
   background: #dcdde0;
 }
 .cursor-box img {
-  height: 48%;
-  max-width: 22%;
+  width: 60%;
+  height: 60%;
   object-fit: contain;
   image-rendering: pixelated;
 }
-/* icon theme preview: sample icon row */
+/* icon theme preview: sample icon grid */
 .sample-row {
   position: absolute;
   inset: 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
   align-items: center;
-  justify-content: center;
-  gap: 12px;
+  justify-items: center;
+  gap: 2px;
+  padding: 8px;
   background: var(--surface-2);
 }
 .sample-row img {
-  width: 26%;
-  max-height: 60%;
+  width: 60%;
+  height: 70%;
   object-fit: contain;
 }
 /* window decoration preview: KDE-style window mockup (titlebar + buttons) */

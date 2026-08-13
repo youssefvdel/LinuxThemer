@@ -497,12 +497,15 @@ fn xcursor_to_png(path: &Path) -> Option<String> {
     Some(out.to_string_lossy().to_string())
 }
 
-/// Render a few real cursors (left_ptr, hand, text, crosshair…) from a cursor
-/// theme so the card shows a KDE-Settings-style cursor preview.
+/// Render real cursors (arrow, hand, text, crosshair, resize, busy, help…) from
+/// a cursor theme so the card shows a KDE-Settings-style 3×3 cursor grid.
 fn find_cursor_samples(dir: &Path) -> Option<Vec<String>> {
     const NAMES: &[&str] = &[
-        "left_ptr", "default", "hand2", "pointer", "xterm", "text", "crosshair", "cross",
-        "size_all",
+        "left_ptr", "default", "hand2", "pointer", "xterm", "text",
+        "crosshair", "cross", "size_all", "fleur",
+        "size_bdiag", "size_fdiag", "sb_h_double_arrow", "sb_v_double_arrow",
+        "watch", "progress", "wait", "help", "question_arrow",
+        "not-allowed", "forbidden", "link", "copy", "alias",
     ];
     let cd = dir.join("cursors");
     let mut out: Vec<String> = vec![];
@@ -519,7 +522,7 @@ fn find_cursor_samples(dir: &Path) -> Option<Vec<String>> {
         if let Some(png) = xcursor_to_png(&p) {
             out.push(png);
         }
-        if out.len() >= 4 {
+        if out.len() >= 9 {
             break;
         }
     }
