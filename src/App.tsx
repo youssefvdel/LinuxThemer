@@ -12,6 +12,7 @@ import {
 import { Sidebar } from "./components/Sidebar";
 import { Topbar } from "./components/Topbar";
 import { ThemeGrid } from "./components/ThemeGrid";
+import { SkeletonGrid } from "./components/Skeleton";
 import { ApplyModal } from "./components/ApplyModal";
 import { ThemeDetail } from "./components/ThemeDetail";
 import { InstalledCard } from "./components/InstalledCard";
@@ -108,9 +109,9 @@ export default function App() {
   // Fetch first page whenever category / search / sort changes (browse only).
   useEffect(() => {
     if (view !== "browse") return;
+    setLoading(true);
     const t = setTimeout(() => {
       let cancelled = false;
-      setLoading(true);
       fetchStore(category, 0, query, sort)
         .then(({ themes: list, total: n }) => {
           if (cancelled) return;
@@ -307,23 +308,17 @@ export default function App() {
               </div>
               <ThemeGrid
                 themes={themes}
+                skeleton={loading && themes.length > 0 ? 3 : 0}
                 installed={installed}
                 favorites={favorites}
                 onOpen={openDetail}
                 onApply={openApply}
                 onToggleFavorite={toggleFavorite}
               />
-              {loading && themes.length === 0 && (
-                <div className="empty">Loading…</div>
-              )}
+              {loading && themes.length === 0 && <SkeletonGrid count={9} />}
               {!loading && themes.length === 0 && (
                 <div className="empty">No themes found.</div>
               )}
-              <div className="load-more">
-                {loading && themes.length > 0 && (
-                  <span className="hint">Loading more…</span>
-                )}
-              </div>
             </div>
           </>
         )}

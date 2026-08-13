@@ -1,8 +1,10 @@
 import type { Theme } from "../types/theme";
 import { ThemeCard } from "./ThemeCard";
+import { SkeletonCard } from "./Skeleton";
 
 interface Props {
   themes: Theme[];
+  skeleton?: number;
   installed: Map<string, Theme>;
   favorites: Map<string, Theme>;
   onOpen: (t: Theme) => void;
@@ -12,6 +14,7 @@ interface Props {
 
 export function ThemeGrid({
   themes,
+  skeleton = 0,
   installed,
   favorites,
   onOpen,
@@ -30,6 +33,9 @@ export function ThemeGrid({
           onApply={onApply}
           onToggleFavorite={onToggleFavorite}
         />
+      ))}
+      {Array.from({ length: skeleton }).map((_, i) => (
+        <SkeletonCard key={`sk-${i}`} />
       ))}
     </div>
   );
