@@ -74,13 +74,13 @@ export function InstalledCard({ item, active, onApply, onRemove }: Props) {
         ) : item.kind === "cursors" && samples.length ? (
           <div className="cursor-box">
             {samples.map((s) => (
-              <img key={s} src={convertFileSrc(s)} alt="" loading="lazy" decoding="async" />
+              <img key={s} src={convertFileSrc(s)} alt="" decoding="async" />
             ))}
           </div>
         ) : item.kind === "icons" && samples.length ? (
           <div className="sample-row">
             {samples.map((s) => (
-              <img key={s} src={convertFileSrc(s)} alt="" loading="lazy" decoding="async" />
+              <img key={s} src={convertFileSrc(s)} alt="" decoding="async" />
             ))}
           </div>
         ) : mockWindow ? (
