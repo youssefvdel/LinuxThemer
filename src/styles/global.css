@@ -6,62 +6,35 @@
   src: url("../assets/fonts/Nunito-Variable.woff2") format("woff2");
 }
 
-/* ============ tokens — light (default) ============ */
+/* ============ tokens — dark (always on, original near-black) ============ */
 :root {
-  --bg: #f2f4f3;
-  --bg-elev: #e9eae8;
-  --surface: #fbfbfa;
-  --surface-2: #f2f4f3;
-  --surface-hover: #efefec;
-  --border: rgba(25, 26, 23, 0.08);
-  --border-strong: rgba(25, 26, 23, 0.16);
-  --text: #191a17;
-  --text-dim: #4a4945;
-  --text-faint: #8a8984;
+  --bg: #0d0e11;
+  --bg-elev: #131418;
+  --surface: #17181d;
+  --surface-2: #1b1d23;
+  --surface-hover: #20222a;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.13);
+  --text: #e9eaee;
+  --text-dim: #9da1ab;
+  --text-faint: #63666e;
   --accent: #3daee9;
-  --accent-strong: #3daee9;
+  --accent-strong: #7cc4f0;
   --accent-soft: rgba(61, 174, 233, 0.18);
   --on-accent: #ffffff;
-  --skel-hi: rgba(0, 0, 0, 0.08);
-  --success: #2f9e6e;
-  --danger: #d64545;
+  --skel-hi: rgba(255, 255, 255, 0.10);
+  --success: #34d399;
+  --danger: #f87171;
   --radius-lg: 24px;
   --radius-md: 18px;
   --radius-sm: 12px;
   /* clay: raised surface (cards, menus) / small button / recessed well */
-  --clay: 8px 12px 24px rgba(25, 26, 23, 0.14), inset -6px -9px 16px rgba(25, 26, 23, 0.08), inset 6px 8px 16px rgba(255, 255, 255, 0.9);
-  --clay-btn: 3px 5px 12px rgba(25, 26, 23, 0.22), inset -2px -3px 6px rgba(25, 26, 23, 0.16), inset 2px 2px 5px rgba(255, 255, 255, 0.55);
-  --inset: inset 4px 5px 12px rgba(25, 26, 23, 0.1), inset -3px -3px 8px rgba(255, 255, 255, 0.85);
-  --shadow-pop: 0 12px 40px rgba(25, 26, 23, 0.28);
+  --clay: 8px 12px 28px rgba(0, 0, 0, 0.5), inset -6px -9px 16px rgba(0, 0, 0, 0.32), inset 6px 8px 16px rgba(255, 255, 255, 0.05);
+  --clay-btn: 3px 5px 12px rgba(0, 0, 0, 0.45), inset -2px -3px 6px rgba(0, 0, 0, 0.3), inset 2px 2px 5px rgba(255, 255, 255, 0.18);
+  --inset: inset 4px 5px 12px rgba(0, 0, 0, 0.42), inset -3px -3px 8px rgba(255, 255, 255, 0.04);
+  --shadow-pop: 0 12px 40px rgba(0, 0, 0, 0.6);
   --font: "Nunito", ui-rounded, "Segoe UI", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
-}
-
-/* ============ tokens — dark ============ */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #191a17;
-    --bg-elev: #23241f;
-    --surface: #23241f;
-    --surface-2: #2a2b25;
-    --surface-hover: #2e2f28;
-    --border: rgba(242, 244, 243, 0.07);
-    --border-strong: rgba(242, 244, 243, 0.14);
-    --text: #f2f4f3;
-    --text-dim: #ceccca;
-    --text-faint: #8f8d84;
-    --accent: #3daee9;
-    --accent-strong: #7cc4f0;
-    --accent-soft: rgba(61, 174, 233, 0.18);
-    --on-accent: #ffffff;
-    --skel-hi: rgba(255, 255, 255, 0.10);
-    --success: #34d399;
-    --danger: #f87171;
-    --clay: 8px 12px 28px rgba(0, 0, 0, 0.5), inset -6px -9px 16px rgba(0, 0, 0, 0.32), inset 6px 8px 16px rgba(255, 255, 255, 0.05);
-    --clay-btn: 3px 5px 12px rgba(0, 0, 0, 0.45), inset -2px -3px 6px rgba(0, 0, 0, 0.3), inset 2px 2px 5px rgba(255, 255, 255, 0.18);
-    --inset: inset 4px 5px 12px rgba(0, 0, 0, 0.42), inset -3px -3px 8px rgba(255, 255, 255, 0.04);
-    --shadow-pop: 0 12px 40px rgba(0, 0, 0, 0.6);
-  }
 }
 
 * {
