@@ -60,11 +60,8 @@ fn first_image(dir: &Path) -> Option<PathBuf> {
     None
 }
 
-fn find_preview(dir: &Path, kind: &str) -> Option<String> {
-    if kind == "wallpapers" {
-        return first_image(dir).map(|p| p.to_string_lossy().to_string());
-    }
-    for sub in ["contents/previews", "previews"] {
+fn find_preview(dir: &Path) -> Option<String> {
+    for sub in ["contents/previews", "contents/images", "previews", "images"] {
         if let Some(p) = first_image(&dir.join(sub)) {
             return Some(p.to_string_lossy().to_string());
         }
@@ -106,7 +103,7 @@ fn scan(kind: &str, roots: &[PathBuf], filter: impl Fn(&Path) -> bool) -> Vec<In
                 name,
                 kind: kind.to_string(),
                 path: d.to_string_lossy().to_string(),
-                preview: find_preview(&d, kind),
+                preview: find_preview(&d),
             });
         }
     }
