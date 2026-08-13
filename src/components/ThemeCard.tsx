@@ -17,16 +17,21 @@ export function ThemeCard({ theme, installed, onApply }: Props) {
         style={{ background: wallpaperBackground(theme) }}
         onClick={() => onApply(theme)}
       >
+        {theme.preview && (
+          <img className="thumb-img" src={theme.preview} alt={theme.name} loading="lazy" />
+        )}
         {installed && <span className="badge active">Active</span>}
       </div>
       <div className="card-body">
         <div className="card-title-row">
           <h4>{theme.name}</h4>
-          <div className="swatches">
-            {theme.palette.slice(0, 5).map((c) => (
-              <span key={c} className="swatch" style={{ background: c }} />
-            ))}
-          </div>
+          {theme.palette && (
+            <div className="swatches">
+              {theme.palette.slice(0, 5).map((c) => (
+                <span key={c} className="swatch" style={{ background: c }} />
+              ))}
+            </div>
+          )}
         </div>
         <div className="card-desc">{theme.description}</div>
         <div className="card-meta">

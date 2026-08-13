@@ -1,7 +1,5 @@
 import { SparkIcon } from "./Icon";
-import type { ThemeCategory } from "../types/theme";
-
-const CATEGORIES: ThemeCategory[] = ["Suite", "GTK", "Qt", "Icons", "Cursors", "Wallpaper"];
+import type { StoreCategory } from "../lib/store";
 
 const nav = [
   { label: "Browse", icon: "✦", active: true },
@@ -10,13 +8,12 @@ const nav = [
 ];
 
 interface Props {
-  category: ThemeCategory | "All";
-  counts: Record<string, number>;
-  onSelectCategory: (c: ThemeCategory | "All") => void;
+  categories: StoreCategory[];
+  activeCategory: string;
+  onSelectCategory: (id: string) => void;
 }
 
-export function Sidebar({ category, counts, onSelectCategory }: Props) {
-  const cats: (ThemeCategory | "All")[] = ["All", ...CATEGORIES];
+export function Sidebar({ categories, activeCategory, onSelectCategory }: Props) {
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -36,20 +33,19 @@ export function Sidebar({ category, counts, onSelectCategory }: Props) {
       ))}
 
       <div className="nav-label">Categories</div>
-      {cats.map((c) => (
+      {categories.map((c) => (
         <div
-          key={c}
-          className={`nav-item ${category === c ? "active" : ""}`}
-          onClick={() => onSelectCategory(c)}
+          key={c.id}
+          className={`nav-item ${activeCategory === c.id ? "active" : ""}`}
+          onClick={() => onSelectCategory(c.id)}
         >
-          {c}
-          <span className="count">{counts[c] ?? 0}</span>
+          {c.label}
         </div>
       ))}
 
       <div className="sidebar-footer">
         <span>v0.1.0</span>
-        <span className="version-chip">rust core</span>
+        <span className="version-chip">kde-look</span>
       </div>
     </aside>
   );

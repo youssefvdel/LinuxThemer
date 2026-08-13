@@ -1,11 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { loadThemes } from "./lib/store";
-import {
-  APPLY_COMPONENTS,
-  type SortId,
-  type Theme,
-  type ThemeCategory,
-} from "./types/theme";
+import { fetchStore, STORE_CATEGORIES } from "./lib/store";
+import { APPLY_COMPONENTS, type SortId, type Theme } from "./types/theme";
 import { Sidebar } from "./components/Sidebar";
 import { Topbar } from "./components/Topbar";
 import { Hero } from "./components/Hero";
@@ -14,44 +9,59 @@ import { ApplyModal } from "./components/ApplyModal";
 
 export default function App() {
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<ThemeCategory | "All">("All");
+  const [category, setCategory] = useState("135");
   const [sort, setSort] = useState<SortId>("popular");
-  const [installed, setInstalled] = useState<Set<string>>(
-    new Set(["catppuccin-mocha"])
-  );
+  const [themes, setThemes] = useState<Theme[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [installed, setInstalled] = useState<Set<string>>(new Set());
   const [applying, setApplying] = useState<Theme | null>(null);
   const [components, setComponents] = useState<Set<string>>(
     new Set(APPLY_COMPONENTS.map((c) => c.id))
   );
-  const [themes, setThemes] = useState<Theme[]>([]);
 
   useEffect(() => {
-    loadThemes().then(setThemes);
-  }, []);
+    const t = setTimeout(() => {
+      let cancelled = false;
+      setLoading(true);
+      fetchStore(category, 0, query)
+        .then(({ themes: list, total: n }) => {
+          if (cancelled) return;
+          setThemes(list);
+          setTotal(n);
+          setPage(0);
+          setLoading(false);
+        })
+        .catch(() => {
+          if (!cancelled) setLoading(false);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }, 300);
+    return () => clearTimeout(t);
+  }, [category, query]);
+
+  const loadMore = async () => {
+    setLoading(true);
+    try {
+      const next = page + 1;
+      const { themes: more } = await fetchStore(category, next, query);
+      setThemes((prev) => [...prev, ...more]);
+      setPage(next);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const list = themes.filter((t) => {
-      const matchCat = category === "All" || t.category === category;
-      const matchQ =
-        !q ||
-        t.name.toLowerCase().includes(q) ||
-        t.author.toLowerCase().includes(q) ||
-        t.tags.some((tag) => tag.includes(q));
-      return matchCat && matchQ;
-    });
-    return [...list].sort((a, b) => {
+    return [...themes].sort((a, b) => {
       if (sort === "popular") return b.downloads - a.downloads;
       if (sort === "rating") return b.rating - a.rating;
       return a.name.localeCompare(b.name);
     });
-  }, [query, category, sort, themes]);
-
-  const counts = useMemo(() => {
-    const c: Record<string, number> = { All: themes.length };
-    for (const t of themes) c[t.category] = (c[t.category] ?? 0) + 1;
-    return c;
-  }, [themes]);
+  }, [themes, sort]);
 
   const toggleInstall = (id: string) => {
     setInstalled((prev) => {
@@ -81,38 +91,50 @@ export default function App() {
     setApplying(null);
   };
 
+  const categoryLabel =
+    STORE_CATEGORIES.find((c) => c.id === category)?.label ?? "Themes";
+  const hasMore = themes.length < total;
+
   return (
     <div className="app">
       <Sidebar
-        category={category}
-        counts={counts}
+        categories={STORE_CATEGORIES}
+        activeCategory={category}
         onSelectCategory={setCategory}
       />
       <div className="main">
         <Topbar
-          count={filtered.length}
+          count={themes.length}
           sort={sort}
           onSort={setSort}
           query={query}
           onQuery={setQuery}
         />
         <div className="content">
-          {themes[0] && (
+          {filtered[0] && (
             <Hero
-              theme={themes[0]}
-              installed={installed.has(themes[0].id)}
+              theme={filtered[0]}
+              installed={installed.has(filtered[0].id)}
               onApply={openApply}
             />
           )}
           <div className="section-head">
-            <h3>All themes</h3>
+            <h3>{categoryLabel}</h3>
             <span className="hint">
-              {category === "All" ? "Every unified manifest in the store" : category}
+              {total.toLocaleString()} themes · page {page + 1}
             </span>
           </div>
           <ThemeGrid themes={filtered} installed={installed} onApply={openApply} />
-          {filtered.length === 0 && themes.length > 0 && (
-            <div className="empty">No themes match “{query}”.</div>
+          {loading && <div className="empty">Loading…</div>}
+          {!loading && filtered.length === 0 && (
+            <div className="empty">No themes found.</div>
+          )}
+          {hasMore && !loading && (
+            <div className="load-more">
+              <button className="btn btn-ghost" onClick={loadMore}>
+                Load more
+              </button>
+            </div>
           )}
         </div>
       </div>

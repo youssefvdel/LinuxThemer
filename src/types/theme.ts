@@ -1,26 +1,4 @@
-export type ThemeCategory =
-  | "Suite"
-  | "GTK"
-  | "Qt"
-  | "Icons"
-  | "Cursors"
-  | "Wallpaper";
-
 export type SortId = "popular" | "rating" | "name";
-
-export interface Theme {
-  id: string;
-  name: string;
-  author: string;
-  category: ThemeCategory;
-  tags: string[];
-  downloads: number;
-  rating: number;
-  wallpaper: [string, string, string];
-  palette: string[];
-  accent: string;
-  description: string;
-}
 
 export type ApplyComponentId =
   | "gtk"
@@ -43,3 +21,22 @@ export const APPLY_COMPONENTS: ApplyComponent[] = [
   { id: "wallpaper", label: "Wallpaper" },
   { id: "accent", label: "Accent color" },
 ];
+
+export interface Theme {
+  id: string;
+  name: string;
+  author: string;
+  category: string;
+  tags: string[];
+  downloads: number;
+  rating: number;
+  description: string;
+  /** Screenshot / preview image URL (from OCS). */
+  preview?: string;
+  /** Archive download URL (from OCS). */
+  downloadUrl?: string;
+  /** Curated gradient fallback (only for bundled seed themes). */
+  wallpaper?: [string, string, string];
+  palette?: string[];
+  accent?: string;
+}

@@ -12,7 +12,11 @@ interface Props {
 export function Hero({ theme, installed, onApply }: Props) {
   return (
     <div className="hero">
-      <div className="hero-art" style={{ background: wallpaperBackground(theme) }} />
+      <div className="hero-art" style={{ background: wallpaperBackground(theme) }}>
+        {theme.preview && (
+          <img className="hero-img" src={theme.preview} alt={theme.name} />
+        )}
+      </div>
       <div className="hero-body">
         <span className="hero-tag">Featured</span>
         <h2>{theme.name}</h2>
