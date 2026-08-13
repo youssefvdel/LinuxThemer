@@ -1,0 +1,384 @@
+[
+  {
+    "id": "catppuccin-mocha",
+    "name": "Catppuccin Mocha",
+    "author": "catppuccin",
+    "category": "Suite",
+    "tags": [
+      "gtk",
+      "qt",
+      "icons",
+      "cursors"
+    ],
+    "downloads": 48200,
+    "rating": 4.9,
+    "wallpaper": [
+      "#1e1e2e",
+      "#313244",
+      "#45475a"
+    ],
+    "palette": [
+      "#f38ba8",
+      "#fab387",
+      "#f9e2af",
+      "#a6e3a1",
+      "#89b4fa",
+      "#cba6f7"
+    ],
+    "accent": "#cba6f7",
+    "description": "Soothing pastel dark, four flavors, complete desktop coverage."
+  },
+  {
+    "id": "tokyo-night",
+    "name": "Tokyo Night",
+    "author": "folke",
+    "category": "Suite",
+    "tags": [
+      "gtk",
+      "qt",
+      "icons"
+    ],
+    "downloads": 39700,
+    "rating": 4.8,
+    "wallpaper": [
+      "#1a1b26",
+      "#24283b",
+      "#16161e"
+    ],
+    "palette": [
+      "#7aa2f7",
+      "#bb9af7",
+      "#7dcfff",
+      "#9ece6a",
+      "#e0af68",
+      "#f7768e"
+    ],
+    "accent": "#7aa2f7",
+    "description": "Neon-soaked midnight palette from the Tokyo city lights."
+  },
+  {
+    "id": "dracula",
+    "name": "Dracula",
+    "author": "dracula",
+    "category": "Suite",
+    "tags": [
+      "gtk",
+      "qt",
+      "icons",
+      "cursors",
+      "wallpaper"
+    ],
+    "downloads": 61400,
+    "rating": 4.7,
+    "wallpaper": [
+      "#282a36",
+      "#44475a",
+      "#191a21"
+    ],
+    "palette": [
+      "#ff79c6",
+      "#bd93f9",
+      "#8be9fd",
+      "#50fa7b",
+      "#ffb86c",
+      "#f1fa8c"
+    ],
+    "accent": "#bd93f9",
+    "description": "The dark theme for everyone, everywhere. Iconic purple-pink."
+  },
+  {
+    "id": "gruvbox-dark",
+    "name": "Gruvbox Dark",
+    "author": "morhetz",
+    "category": "Suite",
+    "tags": [
+      "gtk",
+      "qt"
+    ],
+    "downloads": 27900,
+    "rating": 4.6,
+    "wallpaper": [
+      "#282828",
+      "#3c3836",
+      "#1d2021"
+    ],
+    "palette": [
+      "#cc241d",
+      "#d79921",
+      "#b8bb26",
+      "#83a598",
+      "#d3869b",
+      "#ebdbb2"
+    ],
+    "accent": "#fabd2f",
+    "description": "Retro-groove warm dark, low contrast, easy on the eyes."
+  },
+  {
+    "id": "nord",
+    "name": "Nord",
+    "author": "nordtheme",
+    "category": "Suite",
+    "tags": [
+      "gtk",
+      "icons",
+      "cursors"
+    ],
+    "downloads": 33100,
+    "rating": 4.7,
+    "wallpaper": [
+      "#2e3440",
+      "#3b4252",
+      "#434c5e"
+    ],
+    "palette": [
+      "#88c0d0",
+      "#81a1c1",
+      "#8fbcbb",
+      "#bf616a",
+      "#d08770",
+      "#ebcb8b"
+    ],
+    "accent": "#88c0d0",
+    "description": "Arctic, north-bluish palette. Calm, cold, precise."
+  },
+  {
+    "id": "rose-pine",
+    "name": "Rosé Pine",
+    "author": "rose-pine",
+    "category": "Suite",
+    "tags": [
+      "gtk",
+      "qt",
+      "icons"
+    ],
+    "downloads": 22400,
+    "rating": 4.8,
+    "wallpaper": [
+      "#191724",
+      "#1f1d2e",
+      "#26233a"
+    ],
+    "palette": [
+      "#ebbcba",
+      "#f6c177",
+      "#9ccfd8",
+      "#c4a7e7",
+      "#31748f",
+      "#e0def4"
+    ],
+    "accent": "#ebbcba",
+    "description": "All-natural pine, faux fur and a bit of soho vibes."
+  },
+  {
+    "id": "everforest",
+    "name": "Everforest",
+    "author": "sainnhe",
+    "category": "GTK",
+    "tags": [
+      "gtk",
+      "icons"
+    ],
+    "downloads": 18600,
+    "rating": 4.6,
+    "wallpaper": [
+      "#2d353b",
+      "#343f44",
+      "#232a2e"
+    ],
+    "palette": [
+      "#a7c080",
+      "#7fbbb3",
+      "#d699b6",
+      "#e67e80",
+      "#dbbc7f",
+      "#d3c6aa"
+    ],
+    "accent": "#a7c080",
+    "description": "Comfortable forest green, gentle on long coding sessions."
+  },
+  {
+    "id": "one-dark",
+    "name": "One Dark",
+    "author": "atom",
+    "category": "GTK",
+    "tags": [
+      "gtk",
+      "icons"
+    ],
+    "downloads": 41000,
+    "rating": 4.7,
+    "wallpaper": [
+      "#282c34",
+      "#3b4048",
+      "#21252b"
+    ],
+    "palette": [
+      "#61afef",
+      "#98c379",
+      "#e06c75",
+      "#c678dd",
+      "#e5c07b",
+      "#56b6c2"
+    ],
+    "accent": "#61afef",
+    "description": "Atom's signature theme, ported to the whole desktop."
+  },
+  {
+    "id": "papirus-dark",
+    "name": "Papirus Dark",
+    "author": "PapirusDev",
+    "category": "Icons",
+    "tags": [
+      "icons"
+    ],
+    "downloads": 152300,
+    "rating": 4.9,
+    "wallpaper": [
+      "#1f2329",
+      "#2a3038",
+      "#16191d"
+    ],
+    "palette": [
+      "#5294e2",
+      "#90caf9",
+      "#7cb342",
+      "#f9a825",
+      "#e53935",
+      "#8e24aa"
+    ],
+    "accent": "#5294e2",
+    "description": "The most popular Linux icon theme, dark variant."
+  },
+  {
+    "id": "bibata-modern",
+    "name": "Bibata Modern",
+    "author": "ful1e5",
+    "category": "Cursors",
+    "tags": [
+      "cursors"
+    ],
+    "downloads": 96800,
+    "rating": 4.8,
+    "wallpaper": [
+      "#121212",
+      "#1e1e1e",
+      "#0a0a0a"
+    ],
+    "palette": [
+      "#ffffff",
+      "#f5f5f5",
+      "#9e9e9e",
+      "#616161",
+      "#424242",
+      "#000000"
+    ],
+    "accent": "#ffffff",
+    "description": "Sleek, minimal cursor set. Ice, amber and black variants."
+  },
+  {
+    "id": "solarized-dark",
+    "name": "Solarized Dark",
+    "author": "altercation",
+    "category": "Suite",
+    "tags": [
+      "gtk",
+      "qt"
+    ],
+    "downloads": 29500,
+    "rating": 4.5,
+    "wallpaper": [
+      "#002b36",
+      "#073642",
+      "#001b22"
+    ],
+    "palette": [
+      "#268bd2",
+      "#2aa198",
+      "#859900",
+      "#b58900",
+      "#cb4b16",
+      "#6c71c4"
+    ],
+    "accent": "#268bd2",
+    "description": "Precision colors for machines and people. A classic."
+  },
+  {
+    "id": "ayu-dark",
+    "name": "Ayu Dark",
+    "author": "dempfi",
+    "category": "GTK",
+    "tags": [
+      "gtk",
+      "icons"
+    ],
+    "downloads": 15200,
+    "rating": 4.4,
+    "wallpaper": [
+      "#0f1419",
+      "#1b2733",
+      "#0b0e11"
+    ],
+    "palette": [
+      "#ffb454",
+      "#e6b450",
+      "#39bae6",
+      "#aad94c",
+      "#ff8f40",
+      "#f07178"
+    ],
+    "accent": "#ffb454",
+    "description": "Simple, warm and bright. Built for beautiful displays."
+  },
+  {
+    "id": "kvantum-arc",
+    "name": "Arc Dark (Kvantum)",
+    "author": "varlesh",
+    "category": "Qt",
+    "tags": [
+      "qt"
+    ],
+    "downloads": 21700,
+    "rating": 4.3,
+    "wallpaper": [
+      "#2f343f",
+      "#383c4a",
+      "#262a32"
+    ],
+    "palette": [
+      "#5294e2",
+      "#4a90d9",
+      "#8fa1b3",
+      "#d64937",
+      "#eacb64",
+      "#2f343f"
+    ],
+    "accent": "#5294e2",
+    "description": "Flat, translucent Arc aesthetic for Kvantum / Qt apps."
+  },
+  {
+    "id": "nordic-walls",
+    "name": "Nordic Wallpapers",
+    "author": "nordtheme",
+    "category": "Wallpaper",
+    "tags": [
+      "wallpaper"
+    ],
+    "downloads": 12900,
+    "rating": 4.5,
+    "wallpaper": [
+      "#2e3440",
+      "#88c0d0",
+      "#3b4252"
+    ],
+    "palette": [
+      "#88c0d0",
+      "#81a1c1",
+      "#5e81ac",
+      "#8fbcbb",
+      "#d8dee9",
+      "#2e3440"
+    ],
+    "accent": "#88c0d0",
+    "description": "Aurora-inspired wallpaper pack to match the Nord palette."
+  }
+]

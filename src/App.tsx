@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { themes } from "./data/themes";
+import { useEffect, useMemo, useState } from "react";
+import { loadThemes } from "./lib/store";
 import {
   APPLY_COMPONENTS,
   type SortId,
@@ -23,6 +23,11 @@ export default function App() {
   const [components, setComponents] = useState<Set<string>>(
     new Set(APPLY_COMPONENTS.map((c) => c.id))
   );
+  const [themes, setThemes] = useState<Theme[]>([]);
+
+  useEffect(() => {
+    loadThemes().then(setThemes);
+  }, []);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -40,13 +45,13 @@ export default function App() {
       if (sort === "rating") return b.rating - a.rating;
       return a.name.localeCompare(b.name);
     });
-  }, [query, category, sort]);
+  }, [query, category, sort, themes]);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { All: themes.length };
     for (const t of themes) c[t.category] = (c[t.category] ?? 0) + 1;
     return c;
-  }, []);
+  }, [themes]);
 
   const toggleInstall = (id: string) => {
     setInstalled((prev) => {
@@ -92,11 +97,13 @@ export default function App() {
           onQuery={setQuery}
         />
         <div className="content">
-          <Hero
-            theme={themes[0]}
-            installed={installed.has(themes[0].id)}
-            onApply={openApply}
-          />
+          {themes[0] && (
+            <Hero
+              theme={themes[0]}
+              installed={installed.has(themes[0].id)}
+              onApply={openApply}
+            />
+          )}
           <div className="section-head">
             <h3>All themes</h3>
             <span className="hint">
@@ -104,7 +111,7 @@ export default function App() {
             </span>
           </div>
           <ThemeGrid themes={filtered} installed={installed} onApply={openApply} />
-          {filtered.length === 0 && (
+          {filtered.length === 0 && themes.length > 0 && (
             <div className="empty">No themes match “{query}”.</div>
           )}
         </div>

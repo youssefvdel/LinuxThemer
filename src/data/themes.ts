@@ -1,7 +1,9 @@
 import type { Theme } from "../types/theme";
 
-// Seed data. Replaced by the curated store registry (git-backed manifests)
-// once the Rust store engine lands. ponytail: swap this module for a fetch.
+// Bundled offline fallback. The app normally fetches the registry over HTTP
+// (see lib/store.ts). public/store/index.json is generated from this file:
+//   node --experimental-strip-types -e "const{writeFileSync,mkdirSync}=require('fs');import('./src/data/themes.ts').then(m=>{mkdirSync('public/store',{recursive:true});writeFileSync('public/store/index.json',JSON.stringify(m.themes,null,2))})"
+// ponytail: host the registry on GitHub raw and set VITE_STORE_URL to that URL.
 export const themes: Theme[] = [
   {
     id: "catppuccin-mocha",
