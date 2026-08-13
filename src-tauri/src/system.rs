@@ -15,6 +15,8 @@ pub struct InstalledTheme {
     pub kind: String,
     pub path: String,
     pub preview: Option<String>,
+    /// Representative colors (KDE color schemes) when no screenshot exists.
+    pub palette: Option<Vec<String>>,
 }
 
 fn home() -> PathBuf {
@@ -47,22 +49,21 @@ fn has_entry(dir: &Path, name: &str) -> bool {
 /// svg/webp/avif/gif, or mp4/webm for animated SDDM previews.
 fn first_media(dir: &Path) -> Option<PathBuf> {
     let rd = fs::read_dir(dir).ok()?;
-    for e in rd.filter_map(|e| e.ok()) {
-        let p = e.path();
-        if !p.is_file() {
-            continue;
-        }
-        if let Some(ext) = p.extension().and_then(|x| x.to_str()) {
-            let e = ext.to_ascii_lowercase();
-            if matches!(
-                e.as_str(),
-                "png" | "jpg" | "jpeg" | "webp" | "svg" | "gif" | "avif" | "mp4" | "webm"
-            ) {
-                return Some(p);
-            }
-        }
-    }
-    None
+    let files: Vec<PathBuf> = rd
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .filter(|p| p.is_file())
+        .collect();
+    let ext =
+        |p: &Path| p.extension().and_then(|x| x.to_str()).map(|s| s.to_ascii_lowercase());
+    let is = |p: &Path, set: &[&str]| ext(p).map(|e| set.contains(&e.as_str())).unwrap_or(false);
+    // Prefer universally-renderable raster formats over avif/video (WebKitGTK
+    // may lack AVIF, and mp4/webm need a <video> element).
+    files
+        .iter()
+        .find(|p| is(p, &["png", "jpg", "jpeg", "webp", "svg", "gif"]))
+        .or_else(|| files.iter().find(|p| is(p, &["avif", "mp4", "webm"])))
+        .cloned()
 }
 
 /// Recursive media lookup (bounded depth) for themes that store their preview
@@ -138,6 +139,7 @@ fn scan(kind: &str, roots: &[PathBuf], filter: impl Fn(&Path) -> bool) -> Vec<In
                 kind: kind.to_string(),
                 path: d.to_string_lossy().to_string(),
                 preview: find_preview(&d),
+                palette: None,
             });
         }
     }
@@ -169,6 +171,11 @@ fn scan_files(kind: &str, roots: &[PathBuf], ext: &str) -> Vec<InstalledTheme> {
                     kind: kind.to_string(),
                     path: p.to_string_lossy().to_string(),
                     preview: None,
+                    palette: if kind == "colors" {
+                        read_color_palette(&p)
+                    } else {
+                        None
+                    },
                 });
             }
         }
@@ -179,6 +186,36 @@ fn scan_files(kind: &str, roots: &[PathBuf], ext: &str) -> Vec<InstalledTheme> {
 
 fn custom_dir() -> PathBuf {
     home().join(".local/share/linuxthemer/custom")
+}
+
+/// Extract representative surface colors from a KDE `.colors` file (INI), so
+/// color schemes can render a palette swatch when no screenshot exists.
+fn read_color_palette(path: &Path) -> Option<Vec<String>> {
+    let text = fs::read_to_string(path).ok()?;
+    let mut colors: Vec<String> = vec![];
+    for raw in text.lines() {
+        let line = raw.trim();
+        if line.starts_with('[') && line.ends_with(']') {
+            continue;
+        }
+        if let Some((k, v)) = line.split_once('=') {
+            if k.trim() == "BackgroundNormal" {
+                if let Some(hex) = rgb_to_hex(v.trim()) {
+                    if !colors.contains(&hex) {
+                        colors.push(hex);
+                    }
+                }
+            }
+        }
+        if colors.len() >= 6 {
+            break;
+        }
+    }
+    if colors.is_empty() {
+        None
+    } else {
+        Some(colors)
+    }
 }
 
 fn custom_themes() -> Vec<InstalledTheme> {
@@ -198,6 +235,7 @@ fn custom_themes() -> Vec<InstalledTheme> {
                     kind: "custom".to_string(),
                     path: p.to_string_lossy().to_string(),
                     preview: None,
+                    palette: None,
                 });
             }
         }
@@ -225,7 +263,10 @@ pub fn list_installed() -> Result<Vec<InstalledTheme>, String> {
     ));
     all.extend(scan(
         "decorations",
-        &[h.join(".local/share/aurorae")],
+        &[
+            h.join(".local/share/aurorae/themes"),
+            PathBuf::from("/usr/share/aurorae/themes"),
+        ],
         |_| true,
     ));
     all.extend(scan_files(

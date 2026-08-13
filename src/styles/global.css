@@ -1163,6 +1163,15 @@ textarea {
   text-transform: uppercase;
   color: var(--text-faint);
 }
+.installed-palette {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+.palette-chip {
+  flex: 1;
+  min-width: 0;
+}
 .installed-body {
   padding: 12px 14px 14px;
   display: flex;

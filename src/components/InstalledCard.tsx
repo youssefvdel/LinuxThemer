@@ -26,6 +26,12 @@ export function InstalledCard({ item, active, onApply, onRemove }: Props) {
           ) : (
             <img src={src} alt={item.name} loading="lazy" decoding="async" />
           )
+        ) : item.palette?.length ? (
+          <div className="installed-palette">
+            {item.palette.map((c) => (
+              <span key={c} className="palette-chip" style={{ background: c }} />
+            ))}
+          </div>
         ) : (
           <span className="installed-thumb-fallback">{kindLabel}</span>
         )}

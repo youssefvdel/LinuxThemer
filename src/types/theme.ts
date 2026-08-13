@@ -51,8 +51,10 @@ export interface InstalledTheme {
   name: string;
   kind: string;
   path: string;
-  /** Absolute path to a preview image on disk (may be absent). */
+  /** Absolute path to a preview image/video on disk (may be absent). */
   preview?: string;
+  /** Representative colors (color schemes) when no preview exists. */
+  palette?: string[];
 }
 
 /** The user's currently-applied theme (read from live config files). */
