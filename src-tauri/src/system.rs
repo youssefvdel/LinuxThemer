@@ -148,7 +148,18 @@ fn icon_chain(dir: &Path) -> Vec<PathBuf> {
             }
         }
     }
+    // Fallbacks: Inherits parents + hicolor/breeze. Themes can live under either
+    // ~/.local/share/icons or /usr/share/icons, but the fallback theme (breeze)
+    // is only in the system root — so search both roots for each fallback name.
+    let mut roots: Vec<&Path> = Vec::new();
     if let Some(root) = dir.parent() {
+        roots.push(root);
+    }
+    let system_root = Path::new("/usr/share/icons");
+    if system_root.is_dir() && !roots.contains(&system_root) {
+        roots.push(system_root);
+    }
+    for root in roots {
         for name in inherits.iter().map(String::as_str).chain(["hicolor", "breeze", "breeze-dark"]) {
             let p = root.join(name);
             if p.is_dir() && !chain.contains(&p) {
