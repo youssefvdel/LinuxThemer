@@ -20,7 +20,7 @@ export function InstalledCard({ item, active, onApply, onRemove }: Props) {
     <div className="installed-card">
       <div className="installed-thumb">
         {src ? (
-          <img src={src} alt={item.name} loading="lazy" />
+          <img src={src} alt={item.name} loading="lazy" decoding="async" />
         ) : (
           <span className="installed-thumb-fallback">{kindLabel}</span>
         )}

@@ -35,7 +35,7 @@ export function ThemeCard({
   return (
     <article className="card" onClick={() => onOpen(theme)}>
       <div className="card-thumb" style={{ background: wallpaperBackground(theme) }}>
-        {current && <img className="thumb-img" src={current} alt={theme.name} loading="lazy" />}
+        {current && <img className="thumb-img" src={current} alt={theme.name} loading="lazy" decoding="async" />}
         {images.length > 1 && (
           <>
             <div className="img-dots">
