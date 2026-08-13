@@ -1256,6 +1256,59 @@ textarea {
   max-height: 60%;
   object-fit: contain;
 }
+/* window decoration preview: KDE-style window mockup (titlebar + buttons) */
+.deco-win {
+  position: absolute;
+  inset: 0;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.deco-back {
+  position: absolute;
+  top: 14%;
+  left: 14%;
+  width: 66%;
+  height: 60%;
+  border-radius: 8px;
+  opacity: 0.45;
+}
+.deco-front {
+  position: absolute;
+  top: 26%;
+  left: 22%;
+  width: 66%;
+  height: 58%;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
+}
+.deco-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34%;
+  padding: 0 8px;
+  font-size: 8px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.deco-buttons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.deco-buttons img {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+}
+.deco-body {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.06);
+}
 .installed-body {
   padding: 12px 14px 14px;
   display: flex;

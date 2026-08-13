@@ -53,6 +53,27 @@ function ColorMock({ palette }: { palette: string[] }) {
   );
 }
 
+/** KDE-System-Settings-style window mockup for window-decoration themes. */
+function DecorationMock({ buttons, titlebar }: { buttons: string[]; titlebar?: string }) {
+  const tb = titlebar ?? "#2a2d34";
+  return (
+    <div className="deco-win">
+      <div className="deco-back" style={{ background: tb }} />
+      <div className="deco-front">
+        <div className="deco-titlebar" style={{ background: tb, color: contrast(tb) }}>
+          <div className="deco-buttons">
+            {buttons.map((b) => (
+              <img key={b} src={convertFileSrc(b)} alt="" />
+            ))}
+          </div>
+          <span className="deco-title">Window</span>
+        </div>
+        <div className="deco-body" />
+      </div>
+    </div>
+  );
+}
+
 export function InstalledCard({ item, active, onApply, onRemove }: Props) {
   const [confirming, setConfirming] = useState(false);
   const kindLabel = INSTALLED_KIND_LABELS[item.kind] ?? item.kind;
@@ -83,6 +104,8 @@ export function InstalledCard({ item, active, onApply, onRemove }: Props) {
               <img key={s} src={convertFileSrc(s)} alt="" decoding="async" />
             ))}
           </div>
+        ) : item.kind === "decorations" && samples.length ? (
+          <DecorationMock buttons={samples} titlebar={palette[0]} />
         ) : mockWindow ? (
           <ColorMock palette={palette} />
         ) : palette.length ? (

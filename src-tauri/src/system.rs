@@ -122,10 +122,8 @@ fn find_preview(dir: &Path, kind: &str) -> Option<String> {
         "plasma" => named_file(dir, &["preview.png", "preview.jpg", "screenshot.png"])
             .or_else(|| named_file(&dir.join("dialogs"), &["background.svg", "background.svgz"]))
             .or_else(|| first_media(&dir.join("dialogs"))),
-        "decorations" => named_file(dir, &["preview.png", "preview.jpg", "screenshot.png"])
-            .or_else(|| named_file(dir, &["decoration.svg"])),
         "kvantum" => first_media(dir),
-        _ => None, // icons use `samples` (6-icon row), not a single preview
+        _ => None, // icons/decorations render from samples/palette, not a single preview
     };
     found.map(|p| p.to_string_lossy().to_string())
 }
@@ -262,6 +260,8 @@ fn thumb_path_for(path: &str) -> Option<String> {
         .arg("1")
         .arg("-vf")
         .arg("scale=640:-2")
+        .arg("-pix_fmt")
+        .arg("rgba")
         .arg(&out)
         .status()
         .map(|s| s.success())
@@ -310,14 +310,15 @@ fn scan(kind: &str, roots: &[PathBuf], filter: impl Fn(&Path) -> bool) -> Vec<In
                 kind: kind.to_string(),
                 path: d.to_string_lossy().to_string(),
                 preview: find_preview(&d, kind).and_then(|p| thumb_path_for(&p)),
-                palette: if kind == "gtk" {
-                    read_gtk_palette(&d)
-                } else {
-                    None
+                palette: match kind {
+                    "gtk" => read_gtk_palette(&d),
+                    "decorations" => read_deco_color(&d),
+                    _ => None,
                 },
                 samples: match kind {
                     "icons" => find_representative_icons(&d),
                     "cursors" => find_cursor_samples(&d),
+                    "decorations" => find_deco_buttons(&d),
                     _ => None,
                 },
             });
@@ -526,6 +527,52 @@ fn find_cursor_samples(dir: &Path) -> Option<Vec<String>> {
         None
     } else {
         Some(out)
+    }
+}
+
+/// Collect an Aurorae decoration theme's titlebar button art (close/minimize/
+/// maximize) so the card can render a KDE-style window mockup. KDE composites
+/// these button SVGs onto the titlebar; the raw `decoration.svg` alone is just
+/// an abstract frame and looks wrong as a preview.
+fn find_deco_buttons(dir: &Path) -> Option<Vec<String>> {
+    const NAMES: &[&str] = &["close", "minimize", "maximize", "restore"];
+    let out: Vec<String> = NAMES
+        .iter()
+        .filter_map(|n| {
+            let p = dir.join(format!("{n}.svg"));
+            if p.is_file() {
+                thumb_path_for(&p.to_string_lossy())
+            } else {
+                None
+            }
+        })
+        .take(3)
+        .collect();
+    if out.is_empty() {
+        None
+    } else {
+        Some(out)
+    }
+}
+
+/// Extract the titlebar background color from an Aurorae `decoration.svg`
+/// (`.ColorScheme-Background { color:#RRGGBB; ... }`).
+fn read_deco_color(dir: &Path) -> Option<Vec<String>> {
+    let text = fs::read_to_string(dir.join("decoration.svg")).ok()?;
+    let block = text.split(".ColorScheme-Background").nth(1)?;
+    let block = &block[..block.find('}').unwrap_or(block.len())];
+    let c = block
+        .split("color:")
+        .nth(1)?
+        .trim()
+        .chars()
+        .take_while(|ch| *ch != ';' && *ch != '}')
+        .collect::<String>();
+    let c = c.trim().to_ascii_lowercase();
+    if c.starts_with('#') && c.len() == 7 {
+        Some(vec![c])
+    } else {
+        None
     }
 }
 
