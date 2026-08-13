@@ -375,7 +375,7 @@ export default function App() {
               <span className="hint">{favorites.size} themes</span>
             </div>
             {favorites.size === 0 ? (
-              <div className="empty">No favorites yet. Tap the ♡ on any theme.</div>
+              <div className="empty">No favorites yet. Tap the heart on any theme.</div>
             ) : (
               <ThemeGrid
                 themes={[...favorites.values()]}

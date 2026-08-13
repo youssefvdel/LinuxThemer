@@ -90,12 +90,11 @@ body {
   padding: 4px 8px 18px;
 }
 .brand-mark {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 8px;
-  background: linear-gradient(135deg, #7c5cff, #b06cff);
-  display: grid;
-  place-items: center;
+  display: block;
+  object-fit: cover;
   box-shadow: 0 2px 8px rgba(124, 92, 255, 0.4);
 }
 .brand-name {

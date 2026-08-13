@@ -95,7 +95,9 @@ export function ThemeCard({
         <div className="card-footer">
           <div className="card-stats">
             <Stars rating={theme.rating} />
-            <span className="downloads">↓ {fmtDownloads(theme.downloads)}</span>
+            <span className="downloads">
+              <DownloadIcon size={12} /> {fmtDownloads(theme.downloads)}
+            </span>
           </div>
           <button
             className={`btn btn-ghost ${installed ? "installed" : ""}`}

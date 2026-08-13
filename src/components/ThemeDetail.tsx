@@ -68,7 +68,9 @@ export function ThemeDetail({
           </div>
           <div className="detail-meta">
             <Stars rating={theme.rating} />
-            <span className="downloads">↓ {fmtDownloads(theme.downloads)}</span>
+            <span className="downloads">
+              <DownloadIcon size={13} /> {fmtDownloads(theme.downloads)}
+            </span>
           </div>
           <p className="detail-desc">{theme.description}</p>
           <div className="detail-actions">

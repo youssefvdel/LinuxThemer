@@ -1,12 +1,13 @@
-import { SparkIcon } from "./Icon";
+import { Heart, LayoutGrid, PackageCheck, Palette } from "lucide-react";
+import logo from "../assets/logo.png";
 import type { StoreCategory } from "../lib/store";
 import type { View } from "../types/theme";
 
 const nav = [
-  { id: "browse", label: "Browse", icon: "✦" },
-  { id: "installed", label: "Installed", icon: "✓" },
-  { id: "favorites", label: "Favorites", icon: "♡" },
-  { id: "studio", label: "Studio", icon: "✎" },
+  { id: "browse", label: "Browse", Icon: LayoutGrid },
+  { id: "installed", label: "Installed", Icon: PackageCheck },
+  { id: "favorites", label: "Favorites", Icon: Heart },
+  { id: "studio", label: "Studio", Icon: Palette },
 ] as const;
 
 interface Props {
@@ -31,9 +32,7 @@ export function Sidebar({
   return (
     <aside className="sidebar">
       <div className="brand">
-        <div className="brand-mark">
-          <SparkIcon />
-        </div>
+        <img className="brand-mark" src={logo} alt="LinuxThemer" />
         <div className="brand-name">
           Linux<span>Themer</span>
         </div>
@@ -45,7 +44,7 @@ export function Sidebar({
           className={`nav-item ${view === n.id ? "active" : ""}`}
           onClick={() => onSelectView(n.id)}
         >
-          <span>{n.icon}</span>
+          <n.Icon size={16} strokeWidth={1.8} />
           {n.label}
           {n.id === "installed" && <span className="count">{installedCount}</span>}
           {n.id === "favorites" && <span className="count">{favoritesCount}</span>}
