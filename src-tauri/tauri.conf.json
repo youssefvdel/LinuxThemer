@@ -19,7 +19,8 @@
         "height": 820,
         "resizable": true,
         "fullscreen": false,
-        "decorations": false
+        "decorations": false,
+        "transparent": true
       }
     ],
     "security": {
