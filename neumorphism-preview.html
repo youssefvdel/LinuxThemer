@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LinuxThemer — neumorphism preview</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font: 14px/1.5 "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: #121317;
+    color: #e6e7ea;
+    padding: 40px 32px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  p.sub { color: #9da1ab; margin: 6px 0 8px; font-size: 13.5px; }
+  p.note { color: #63666e; margin: 0 0 30px; font-size: 12px; }
+
+  .variant-label {
+    font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+    color: #9da1ab; margin: 26px 0 12px;
+  }
+
+  /* ============ DARK NEUMORPHISM ============ */
+  .dark {
+    --base: #1d1e23;
+    --text: #e6e7ea;
+    --dim: #9da1ab;
+    --faint: #66686f;
+    --accent: #7c8aff;
+    background: var(--base);
+    border-radius: 18px;
+    padding: 26px;
+    box-shadow: 8px 8px 18px rgba(0,0,0,.55), -8px -8px 18px rgba(255,255,255,.04);
+  }
+  .dark .raised {
+    background: var(--base);
+    box-shadow: 5px 5px 12px rgba(0,0,0,.5), -5px -5px 12px rgba(255,255,255,.045);
+  }
+  .dark .inset {
+    background: var(--base);
+    box-shadow: inset 4px 4px 9px rgba(0,0,0,.5), inset -4px -4px 9px rgba(255,255,255,.03);
+  }
+
+  /* ============ LIGHT NEUMORPHISM ============ */
+  .light {
+    --base: #e6e9f0;
+    --text: #3a3f4a;
+    --dim: #7f8694;
+    --faint: #a7adb9;
+    --accent: #5b6be0;
+    background: var(--base);
+    border-radius: 18px;
+    padding: 26px;
+    box-shadow: 10px 10px 20px rgba(163,177,198,.55), -10px -10px 20px rgba(255,255,255,.9);
+  }
+  .light .raised {
+    background: var(--base);
+    box-shadow: 6px 6px 14px rgba(163,177,198,.55), -6px -6px 14px rgba(255,255,255,.9);
+  }
+  .light .inset {
+    background: var(--base);
+    box-shadow: inset 5px 5px 10px rgba(163,177,198,.5), inset -5px -5px 10px rgba(255,255,255,.9);
+  }
+
+  /* ============ shared mock layout ============ */
+  .mock {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .titlebar {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px;
+  }
+  .tb-brand { display: flex; align-items: center; gap: 9px; }
+  .tb-logo { width: 20px; height: 20px; border-radius: 6px; background: linear-gradient(135deg, #9d9dfa, #6f6fe8); }
+  .tb-name { font-size: 13px; font-weight: 650; color: var(--text); }
+  .tb-controls { display: flex; gap: 8px; }
+  .ctrl { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; font-size: 12px; color: var(--dim); }
+  .ctrl.close { color: #e06a6a; }
+
+  .sidebar { padding: 16px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .nav { padding: 8px 12px; border-radius: 10px; font-size: 13px; color: var(--dim); font-weight: 500; }
+  .nav.active { color: var(--accent); }
+  .cat-label { font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); margin: 10px 4px 0; }
+
+  .main { padding: 16px 18px 20px; display: flex; flex-direction: column; gap: 16px; }
+  .search { padding: 10px 14px; border-radius: 12px; font-size: 13px; color: var(--faint); }
+  .card-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .card { border-radius: 14px; padding: 12px; }
+  .thumb { height: 74px; border-radius: 10px; background: linear-gradient(135deg, var(--accent), #b19bfa); opacity: .82; }
+  .card h4 { font-size: 13px; font-weight: 650; color: var(--text); margin-top: 10px; }
+  .card .by { font-size: 11px; color: var(--faint); margin-top: 2px; }
+  .card .row { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+  .stars { color: #d9a520; font-size: 11px; letter-spacing: 1px; }
+  .apply {
+    border-radius: 10px; padding: 6px 14px; font-size: 12px; font-weight: 600; color: var(--accent); cursor: pointer;
+  }
+  .apply:active { box-shadow: inset 4px 4px 8px rgba(0,0,0,.35), inset -4px -4px 8px rgba(255,255,255,.06); }
+  .light .apply:active { box-shadow: inset 4px 4px 8px rgba(163,177,198,.6), inset -4px -4px 8px rgba(255,255,255,.9); }
+</style>
+</head>
+<body>
+  <h1>LinuxThemer — neumorphism</h1>
+  <p class="sub">Two flavors of the same soft-UI language. Pick one, or mix.</p>
+  <p class="note">Neumorphism is low-contrast by nature — interactive states stay clearly pressed (inset) vs raised so buttons still read as buttons.</p>
+
+  <div class="variant-label">Dark neumorphism</div>
+  <div class="dark">
+    <div class="mock">
+      <div class="titlebar raised">
+        <div class="tb-brand"><div class="tb-logo"></div><span class="tb-name">LinuxThemer</span></div>
+        <div class="tb-controls">
+          <span class="ctrl raised">–</span><span class="ctrl raised">□</span><span class="ctrl raised close">×</span>
+        </div>
+      </div>
+      <div class="sidebar">
+        <div class="nav active raised">Browse</div>
+        <div class="nav raised">Installed</div>
+        <div class="nav raised">Favorites</div>
+        <div class="nav raised">Studio</div>
+        <div class="cat-label">Categories</div>
+        <div class="nav inset">GTK Themes</div>
+      </div>
+      <div class="main">
+        <div class="search inset">Search themes…</div>
+        <div class="card-row">
+          <div class="card raised"><div class="thumb"></div><h4>Dracula</h4><div class="by">by zenorocha · GTK</div><div class="row"><span class="stars">★★★★★</span><span class="apply raised">Apply</span></div></div>
+          <div class="card raised"><div class="thumb" style="background:linear-gradient(135deg,#7cd992,#4cae6a)"></div><h4>Catppuccin</h4><div class="by">by catppuccin · GTK</div><div class="row"><span class="stars">★★★★★</span><span class="apply raised">Apply</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="variant-label">Light neumorphism</div>
+  <div class="light">
+    <div class="mock">
+      <div class="titlebar raised">
+        <div class="tb-brand"><div class="tb-logo"></div><span class="tb-name">LinuxThemer</span></div>
+        <div class="tb-controls">
+          <span class="ctrl raised">–</span><span class="ctrl raised">□</span><span class="ctrl raised close">×</span>
+        </div>
+      </div>
+      <div class="sidebar">
+        <div class="nav active raised">Browse</div>
+        <div class="nav raised">Installed</div>
+        <div class="nav raised">Favorites</div>
+        <div class="nav raised">Studio</div>
+        <div class="cat-label">Categories</div>
+        <div class="nav inset">GTK Themes</div>
+      </div>
+      <div class="main">
+        <div class="search inset">Search themes…</div>
+        <div class="card-row">
+          <div class="card raised"><div class="thumb"></div><h4>Dracula</h4><div class="by">by zenorocha · GTK</div><div class="row"><span class="stars">★★★★★</span><span class="apply raised">Apply</span></div></div>
+          <div class="card raised"><div class="thumb" style="background:linear-gradient(135deg,#7cd992,#4cae6a)"></div><h4>Catppuccin</h4><div class="by">by catppuccin · GTK</div><div class="row"><span class="stars">★★★★★</span><span class="apply raised">Apply</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -74,6 +74,7 @@ export default function App() {
   const [saveName, setSaveName] = useState("");
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
+  const [noticeErr, setNoticeErr] = useState(false);
 
   const mainRef = useRef<HTMLDivElement | null>(null);
 
@@ -211,6 +212,7 @@ export default function App() {
       setApplyingInstalled(item);
     } else {
       setActiveInstalledId(item.id);
+      setNoticeErr(false);
       setNotice(`Applied ${item.name}.`);
     }
   };
@@ -222,12 +224,14 @@ export default function App() {
 
   const removeTheme = async (item: InstalledTheme) => {
     setNotice("");
+    setNoticeErr(false);
     try {
       await removeInstalled(item.path);
       setActiveInstalledId((id) => (id === item.id ? null : id));
       setInstalledList(await fetchInstalled());
       setNotice(`Removed ${item.name}.`);
     } catch (e) {
+      setNoticeErr(true);
       setNotice(String(e));
     }
   };
@@ -259,6 +263,7 @@ export default function App() {
     if (!name || saving) return;
     setSaving(true);
     setNotice("");
+    setNoticeErr(false);
     try {
       await saveCurrentTheme(name);
       setSaveName("");
@@ -267,6 +272,7 @@ export default function App() {
       setInstalledList(list);
       setInstalledTab("custom");
     } catch (e) {
+      setNoticeErr(true);
       setNotice(String(e));
     } finally {
       setSaving(false);
@@ -359,7 +365,7 @@ export default function App() {
                 )}
               </div>
             </div>
-            {notice && <div className="notice">{notice}</div>}
+            {notice && <div className={`notice ${noticeErr ? "error" : ""}`}>{notice}</div>}
             {installedKinds.length === 0 ? (
               <div className="empty">No themes found on this device.</div>
             ) : (

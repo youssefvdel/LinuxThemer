@@ -52,9 +52,33 @@ fn first_image(dir: &Path) -> Option<PathBuf> {
         }
         if let Some(ext) = p.extension().and_then(|x| x.to_str()) {
             let e = ext.to_ascii_lowercase();
-            if matches!(e.as_str(), "png" | "jpg" | "jpeg" | "webp") {
+            if matches!(e.as_str(), "png" | "jpg" | "jpeg" | "webp" | "svg") {
                 return Some(p);
             }
+        }
+    }
+    None
+}
+
+/// Recursive image lookup (bounded depth) for themes that store their preview
+/// or screenshot in a non-standard subdirectory.
+fn find_image_deep(dir: &Path, depth: u8) -> Option<PathBuf> {
+    if let Some(p) = first_image(dir) {
+        return Some(p);
+    }
+    if depth == 0 {
+        return None;
+    }
+    let rd = fs::read_dir(dir).ok()?;
+    let mut subs: Vec<PathBuf> = rd
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .filter(|p| p.is_dir())
+        .collect();
+    subs.sort();
+    for d in subs {
+        if let Some(p) = find_image_deep(&d, depth - 1) {
+            return Some(p);
         }
     }
     None
@@ -70,6 +94,7 @@ fn find_preview(dir: &Path) -> Option<String> {
         "preview.png",
         "preview.jpg",
         "preview.webp",
+        "preview.svg",
         "screenshot.png",
         "screenshot.jpg",
         "theme-preview.png",
@@ -80,7 +105,7 @@ fn find_preview(dir: &Path) -> Option<String> {
             return Some(p.to_string_lossy().to_string());
         }
     }
-    None
+    find_image_deep(dir, 3).map(|p| p.to_string_lossy().to_string())
 }
 
 fn scan(kind: &str, roots: &[PathBuf], filter: impl Fn(&Path) -> bool) -> Vec<InstalledTheme> {
@@ -241,15 +266,11 @@ pub fn list_installed() -> Result<Vec<InstalledTheme>, String> {
     Ok(all)
 }
 
-/// Remove an installed theme from disk. Only paths under $HOME are removable —
-/// system themes under /usr/share are never touched.
+/// Remove an installed theme from disk (any location — user or system).
+/// System paths under /usr/share need root; the error surfaces to the UI.
 #[tauri::command]
 pub fn remove_installed(path: String) -> Result<(), String> {
     let p = PathBuf::from(&path);
-    let h = home();
-    if !p.starts_with(&h) {
-        return Err("refusing to remove anything outside your home directory".into());
-    }
     if p.is_dir() {
         fs::remove_dir_all(&p).map_err(|e| e.to_string())
     } else if p.is_file() {

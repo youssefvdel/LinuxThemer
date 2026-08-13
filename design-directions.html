@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LinuxThemer — design directions</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font: 14px/1.5 -apple-system, "Segoe UI", system-ui, Roboto, sans-serif;
+    background: #08090a;
+    color: #e6e7ea;
+    padding: 40px 36px 80px;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  p.sub { color: #8b8e96; margin: 6px 0 34px; font-size: 13.5px; }
+
+  .label {
+    font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+    color: #9da1ab; margin: 30px 0 12px;
+  }
+
+  .mock {
+    border-radius: 12px;
+    overflow: hidden;
+    max-width: 880px;
+  }
+  .titlebar {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 38px; padding: 0 14px;
+    font-size: 12.5px;
+  }
+  .ctrls { display: flex; gap: 8px; opacity: .7; }
+  .body { display: grid; grid-template-columns: 168px 1fr; min-height: 240px; }
+  .side { padding: 14px 12px; display: flex; flex-direction: column; gap: 6px; }
+  .nav { font-size: 12.5px; padding: 7px 10px; border-radius: 7px; }
+  .catt { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; margin: 12px 4px 0; opacity: .45; }
+  .main { padding: 16px 18px; }
+  .search { padding: 9px 13px; border-radius: 8px; font-size: 12.5px; margin-bottom: 14px; }
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .card { border-radius: 10px; padding: 11px; }
+  .thumb { height: 66px; border-radius: 7px; margin-bottom: 10px; }
+  .ttl { font-size: 13px; font-weight: 650; }
+  .by { font-size: 11px; opacity: .5; margin: 2px 0 10px; }
+  .apply { font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 7px; border: none; cursor: pointer; }
+
+  /* ============ 1. REFINED DARK (Linear-style) ============ */
+  .refined .mock { background: #0b0b0d; border: 1px solid rgba(255,255,255,.08); }
+  .refined .titlebar { border-bottom: 1px solid rgba(255,255,255,.08); }
+  .refined .side { border-right: 1px solid rgba(255,255,255,.08); }
+  .refined .nav { color: #8b8e96; }
+  .refined .nav.on { background: rgba(255,255,255,.06); color: #fff; }
+  .refined .search { background: #131316; border: 1px solid rgba(255,255,255,.08); color: #8b8e96; }
+  .refined .card { background: #131316; border: 1px solid rgba(255,255,255,.08); }
+  .refined .ttl { color: #ececee; }
+  .refined .apply { background: #fff; color: #0b0b0d; }
+  .refined .thumb { background: #1d1e23; }
+
+  /* ============ 2. INDUSTRIAL / TACTICAL BRUTALISM ============ */
+  .brutal { font-family: "JetBrains Mono", "SF Mono", ui-monospace, monospace; }
+  .brutal .mock { background: #0a0a0a; border: 2px solid #2a2a2a; border-radius: 0; }
+  .brutal .titlebar { border-bottom: 2px solid #2a2a2a; text-transform: uppercase; letter-spacing: .08em; color: #eaeaea; }
+  .brutal .side { border-right: 2px solid #2a2a2a; }
+  .brutal .nav { border-radius: 0; color: #8a8a8a; text-transform: uppercase; letter-spacing: .06em; border-left: 2px solid transparent; }
+  .brutal .nav.on { color: #e61919; border-left: 2px solid #e61919; background: rgba(230,25,25,.06); }
+  .brutal .catt { color: #555; }
+  .brutal .search { border-radius: 0; background: #0a0a0a; border: 1px solid #2a2a2a; color: #555; text-transform: uppercase; letter-spacing: .05em; }
+  .brutal .card { border-radius: 0; border: 1px solid #2a2a2a; background: #0d0d0d; }
+  .brutal .thumb { border-radius: 0; background: #151515; border-bottom: 1px solid #2a2a2a; }
+  .brutal .ttl { color: #eaeaea; text-transform: uppercase; letter-spacing: .04em; }
+  .brutal .by { color: #555; text-transform: uppercase; font-size: 10px; letter-spacing: .05em; }
+  .brutal .apply { border-radius: 0; background: #e61919; color: #0a0a0a; text-transform: uppercase; letter-spacing: .06em; }
+
+  /* ============ 3. CRT / TERMINAL ============ */
+  .crt { font-family: "JetBrains Mono", "SF Mono", ui-monospace, monospace; }
+  .crt .mock { background: #0a0e0a; border: 1px solid #143014; border-radius: 8px; position: relative; }
+  .crt .mock::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(0deg, transparent 0 2px, rgba(0,0,0,.18) 2px 4px);
+    border-radius: 8px;
+  }
+  .crt .titlebar { border-bottom: 1px solid #143014; color: #9fe89f; text-shadow: 0 0 6px rgba(74,246,38,.35); }
+  .crt .side { border-right: 1px solid #143014; }
+  .crt .nav { color: #6aa06a; border-radius: 4px; }
+  .crt .nav.on { color: #4af626; background: rgba(74,246,38,.08); text-shadow: 0 0 6px rgba(74,246,38,.5); }
+  .crt .catt { color: #4a6a4a; }
+  .crt .search { background: #0a0e0a; border: 1px solid #1d3d1d; color: #4a8a4a; border-radius: 4px; }
+  .crt .card { background: #0c120c; border: 1px solid #143014; border-radius: 6px; }
+  .crt .thumb { background: #0e1a0e; border: 1px solid #143014; }
+  .crt .ttl { color: #b8ffb8; text-shadow: 0 0 5px rgba(74,246,38,.25); }
+  .crt .by { color: #4a8a4a; }
+  .crt .apply { background: transparent; color: #4af626; border: 1px solid #2a5a2a; border-radius: 4px; text-shadow: 0 0 6px rgba(74,246,38,.5); }
+
+  /* ============ 4. TONAL ADAPTIVE ============ */
+  .adaptive .mock { background: #141519; border: 1px solid rgba(255,255,255,.07); border-radius: 14px; }
+  .adaptive .titlebar { border-bottom: 1px solid rgba(255,255,255,.07); }
+  .adaptive .side { border-right: 1px solid rgba(255,255,255,.07); }
+  .adaptive .nav { color: #9a9da6; border-radius: 9px; }
+  .adaptive .nav.on { background: rgba(52,211,153,.14); color: #34d399; }
+  .adaptive .search { background: #1a1b20; border: 1px solid rgba(255,255,255,.07); color: #9a9da6; border-radius: 10px; }
+  .adaptive .card { background: #1a1b20; border: 1px solid rgba(255,255,255,.07); border-radius: 12px; }
+  .adaptive .ttl { color: #ececee; }
+  .adaptive .apply { background: #34d399; color: #0b1210; border-radius: 8px; }
+  .adaptive .thumb { background: linear-gradient(135deg, #1d2622, #22302a); }
+
+  .accent-note { display: flex; align-items: center; gap: 10px; margin: 12px 4px 0; }
+  .accent-note span { font-size: 11px; color: #9a9da6; }
+  .sw { width: 18px; height: 18px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+</style>
+</head>
+<body>
+  <h1>LinuxThemer — design directions</h1>
+  <p class="sub">Four languages, same layout. Pick one — or name the thing you like in each.</p>
+
+  <div class="label">1 · Refined dark (Linear-style)</div>
+  <div class="refined">
+    <div class="mock">
+      <div class="titlebar"><span>LinuxThemer</span><span class="ctrls">– □ ×</span></div>
+      <div class="body">
+        <div class="side">
+          <div class="nav on">Browse</div><div class="nav">Installed</div><div class="nav">Favorites</div><div class="nav">Studio</div>
+          <div class="catt">Categories</div><div class="nav">GTK Themes</div>
+        </div>
+        <div class="main">
+          <div class="search">Search themes…</div>
+          <div class="cards">
+            <div class="card"><div class="thumb"></div><div class="ttl">Dracula</div><div class="by">zenorocha · GTK</div><button class="apply">Apply</button></div>
+            <div class="card"><div class="thumb"></div><div class="ttl">Catppuccin</div><div class="by">catppuccin · GTK</div><button class="apply">Apply</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="label">2 · Industrial / tactical brutalism</div>
+  <div class="brutal">
+    <div class="mock">
+      <div class="titlebar"><span>[ LINUXTHEMER ]</span><span class="ctrls">REV 2.6</span></div>
+      <div class="body">
+        <div class="side">
+          <div class="nav on">Browse</div><div class="nav">Installed</div><div class="nav">Favorites</div><div class="nav">Studio</div>
+          <div class="catt">Categories</div><div class="nav">GTK Themes</div>
+        </div>
+        <div class="main">
+          <div class="search">SEARCH THEMES…</div>
+          <div class="cards">
+            <div class="card"><div class="thumb"></div><div class="ttl">Dracula</div><div class="by">zenorocha · GTK</div><button class="apply">Apply</button></div>
+            <div class="card"><div class="thumb"></div><div class="ttl">Catppuccin</div><div class="by">catppuccin · GTK</div><button class="apply">Apply</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="label">3 · CRT / terminal</div>
+  <div class="crt">
+    <div class="mock">
+      <div class="titlebar"><span>linux-themer</span><span class="ctrls">_ □ x</span></div>
+      <div class="body">
+        <div class="side">
+          <div class="nav on">Browse</div><div class="nav">Installed</div><div class="nav">Favorites</div><div class="nav">Studio</div>
+          <div class="catt">Categories</div><div class="nav">GTK Themes</div>
+        </div>
+        <div class="main">
+          <div class="search">search themes…</div>
+          <div class="cards">
+            <div class="card"><div class="thumb"></div><div class="ttl">Dracula</div><div class="by">zenorocha · GTK</div><button class="apply">Apply</button></div>
+            <div class="card"><div class="thumb"></div><div class="ttl">Catppuccin</div><div class="by">catppuccin · GTK</div><button class="apply">Apply</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="label">4 · Tonal adaptive (accent follows your KDE theme)</div>
+  <div class="adaptive">
+    <div class="mock">
+      <div class="titlebar"><span>LinuxThemer</span><span class="ctrls">– □ ×</span></div>
+      <div class="body">
+        <div class="side">
+          <div class="nav on">Browse</div><div class="nav">Installed</div><div class="nav">Favorites</div><div class="nav">Studio</div>
+          <div class="catt">Categories</div><div class="nav">GTK Themes</div>
+          <div class="accent-note">
+            <span class="sw" style="background:#34d399"></span><span class="sw" style="background:#f59e0b"></span><span class="sw" style="background:#60a5fa"></span>
+            <span>accent = your KDE accent</span>
+          </div>
+        </div>
+        <div class="main">
+          <div class="search">Search themes…</div>
+          <div class="cards">
+            <div class="card"><div class="thumb"></div><div class="ttl">Dracula</div><div class="by">zenorocha · GTK</div><button class="apply">Apply</button></div>
+            <div class="card"><div class="thumb"></div><div class="ttl">Catppuccin</div><div class="by">catppuccin · GTK</div><button class="apply">Apply</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
