@@ -1,8 +1,12 @@
 import type { Theme } from "../types/theme";
 
-/** "48200" -> "48.2k", "152300" -> "152.3k", "900" -> "900" */
+/** "48200" -> "48.2k", "1523000" -> "1.5M", "999999" -> "999.9k", "900" -> "900" */
 export function fmtDownloads(n: number): string {
-  if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k`;
+  const compact = (div: number, suffix: string) =>
+    `${(Math.floor((n / div) * 10) / 10).toFixed(1).replace(/\.0$/, "")}${suffix}`;
+  if (n >= 1_000_000_000) return compact(1_000_000_000, "B");
+  if (n >= 1_000_000) return compact(1_000_000, "M");
+  if (n >= 1000) return compact(1000, "k");
   return String(n);
 }
 
