@@ -1312,6 +1312,50 @@ textarea {
   color: var(--text-faint);
   font-weight: 700;
 }
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.settings-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+.settings-select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  max-width: 420px;
+  padding: 11px 14px;
+  border: none;
+  border-radius: 16px;
+  background: var(--surface) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%238a8a8a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>")
+    no-repeat right 14px center;
+  box-shadow: var(--clay-btn);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: box-shadow 0.16s;
+}
+.settings-select:hover {
+  box-shadow: var(--clay-btn), 0 0 0 2px var(--accent-soft);
+}
+.settings-select:focus {
+  outline: none;
+  box-shadow: var(--clay-btn), 0 0 0 2px var(--accent);
+}
+.settings-select option {
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 500;
+}
+.settings-apply {
+  margin-top: 18px;
+}
 .notice {
   margin-bottom: 12px;
   padding: 9px 14px;

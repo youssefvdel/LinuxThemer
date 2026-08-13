@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { InstalledTheme } from "../types/theme";
 import { applyComponent } from "../lib/installed";
 import { fetchCurrentTheme } from "../lib/studio";
@@ -28,54 +28,74 @@ const SECTIONS = [
 ];
 
 export function Settings({ installed }: Props) {
-  const [accent, setAccent] = useState("#3daee9");
   const [current, setCurrent] = useState<Record<string, string>>({});
+  const [draft, setDraft] = useState<Record<string, string>>({});
+  const [accent, setAccent] = useState("#3daee9");
+  const [appliedAccent, setAppliedAccent] = useState("#3daee9");
   const [notice, setNotice] = useState("");
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     fetchCurrentTheme()
       .then((c) => {
-        setAccent(c.accentColor || "#3daee9");
-        applyAccent(c.accentColor || "#3daee9");
-        setCurrent({
+        const cur = {
           gtk: c.gtkTheme,
           icons: c.iconTheme,
           cursors: c.cursorTheme,
           colors: c.colorScheme,
           plasma: c.plasmaTheme,
-        });
+        };
+        setCurrent(cur);
+        setDraft(cur);
+        const a = c.accentColor || "#3daee9";
+        setAccent(a);
+        setAppliedAccent(a);
+        applyAccent(a);
       })
       .catch(() => {});
   }, []);
 
-  const pickAccent = async (hex: string) => {
-    setAccent(hex);
-    applyAccent(hex);
-    try {
-      await applyComponent("accent", hex);
-      setNotice(`Accent → ${hex}`);
-    } catch (e) {
-      setNotice(String(e));
+  const dirty = useMemo(() => {
+    for (const s of SECTIONS) {
+      if ((draft[s.kind] ?? "") !== (current[s.kind] ?? "")) return true;
     }
+    return accent !== appliedAccent;
+  }, [draft, current, accent, appliedAccent]);
+
+  const options = (match: string, cur: string) => {
+    const set = new Set(installed.filter((t) => t.kind === match).map((t) => t.name));
+    if (cur) set.add(cur); // always show the applied value, even if not installed
+    return [...set].sort((a, b) => a.localeCompare(b));
   };
 
-  const pick = async (kind: string, value: string) => {
-    setCurrent((c) => ({ ...c, [kind]: value }));
+  const apply = async () => {
+    setBusy(true);
     try {
-      await applyComponent(kind, value);
-      setNotice(`Applied ${kind} → ${value}`);
+      for (const s of SECTIONS) {
+        const v = draft[s.kind] ?? "";
+        if (v && v !== (current[s.kind] ?? "")) {
+          await applyComponent(s.kind, v);
+        }
+      }
+      if (accent !== appliedAccent) {
+        await applyComponent("accent", accent);
+        applyAccent(accent);
+        setAppliedAccent(accent);
+      }
+      setCurrent(draft);
+      setNotice("Applied ✓");
     } catch (e) {
       setNotice(String(e));
+    } finally {
+      setBusy(false);
     }
   };
-
-  const byKind = (k: string) => installed.filter((t) => t.kind === k);
 
   return (
     <div className="content">
       <div className="section-head">
         <h3>Settings</h3>
-        <span className="hint">Accent color + live system themes</span>
+        <span className="hint">Pick components, then Apply</span>
       </div>
 
       {notice && <div className="notice">{notice}</div>}
@@ -88,29 +108,36 @@ export function Settings({ installed }: Props) {
             className={`accent-swatch ${accent.toLowerCase() === a.hex ? "on" : ""}`}
             style={{ background: a.hex }}
             title={a.name}
-            onClick={() => pickAccent(a.hex)}
+            onClick={() => setAccent(a.hex)}
           />
         ))}
       </div>
 
       {SECTIONS.map((s) => (
-        <div key={s.kind} className="studio-block">
-          <div className="studio-label">
-            {s.label} <span className="settings-val">— {current[s.kind] || "none"}</span>
-          </div>
-          <div className="studio-grid">
-            {byKind(s.match).map((t) => (
-              <button
-                key={t.id}
-                className={`studio-option ${current[s.kind] === t.name ? "on" : ""}`}
-                onClick={() => pick(s.kind, t.name)}
-              >
-                <span className="studio-option-name">{t.name}</span>
-              </button>
+        <div key={s.kind} className="settings-field">
+          <label className="settings-label">{s.label}</label>
+          <select
+            className="settings-select"
+            value={draft[s.kind] ?? ""}
+            onChange={(e) => setDraft((d) => ({ ...d, [s.kind]: e.target.value }))}
+          >
+            <option value="">— none —</option>
+            {options(s.match, current[s.kind]).map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
             ))}
-          </div>
+          </select>
         </div>
       ))}
+
+      {dirty && (
+        <div className="settings-apply">
+          <button className="btn btn-primary" onClick={apply} disabled={busy}>
+            {busy ? "Applying…" : "Apply changes"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

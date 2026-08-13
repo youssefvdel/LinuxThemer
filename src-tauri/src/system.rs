@@ -111,6 +111,38 @@ fn scan(kind: &str, roots: &[PathBuf], filter: impl Fn(&Path) -> bool) -> Vec<In
     out
 }
 
+/// Scan for themes that live as single files (KDE color schemes are `.colors` files).
+fn scan_files(kind: &str, roots: &[PathBuf], ext: &str) -> Vec<InstalledTheme> {
+    let mut seen = HashSet::new();
+    let mut out = vec![];
+    for root in roots {
+        if let Ok(rd) = fs::read_dir(root) {
+            for e in rd.filter_map(|e| e.ok()) {
+                let p = e.path();
+                if !p.is_file() || p.extension().and_then(|x| x.to_str()) != Some(ext) {
+                    continue;
+                }
+                let name = p
+                    .file_stem()
+                    .map(|n| n.to_string_lossy().to_string())
+                    .unwrap_or_default();
+                if name.is_empty() || !seen.insert(name.clone()) {
+                    continue;
+                }
+                out.push(InstalledTheme {
+                    id: format!("{kind}:{name}"),
+                    name,
+                    kind: kind.to_string(),
+                    path: p.to_string_lossy().to_string(),
+                    preview: None,
+                });
+            }
+        }
+    }
+    out.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    out
+}
+
 fn custom_dir() -> PathBuf {
     home().join(".local/share/linuxthemer/custom")
 }
@@ -162,13 +194,13 @@ pub fn list_installed() -> Result<Vec<InstalledTheme>, String> {
         &[h.join(".local/share/aurorae")],
         |_| true,
     ));
-    all.extend(scan(
+    all.extend(scan_files(
         "colors",
         &[
             h.join(".local/share/color-schemes"),
             PathBuf::from("/usr/share/color-schemes"),
         ],
-        |_| true,
+        "colors",
     ));
     all.extend(scan(
         "wallpapers",
