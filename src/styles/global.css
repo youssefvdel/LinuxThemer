@@ -1232,6 +1232,13 @@ textarea {
   font-size: 13px;
   color: var(--text);
 }
+.studio-option-val {
+  display: block;
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-top: 3px;
+  word-break: break-all;
+}
 .notice {
   margin-bottom: 12px;
   padding: 9px 14px;

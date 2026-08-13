@@ -7,9 +7,10 @@ interface Props {
   onSaved: () => void;
 }
 
-type TabId = "gtk" | "qt" | "icons" | "cursors" | "colors" | "plasma";
+type TabId = "global" | "gtk" | "qt" | "icons" | "cursors" | "colors" | "plasma";
 
 const TABS: { id: TabId; label: string }[] = [
+  { id: "global", label: "Global Theme" },
   { id: "gtk", label: "GTK" },
   { id: "qt", label: "Qt / Kvantum" },
   { id: "icons", label: "Icons" },
@@ -32,7 +33,7 @@ function emptySpec(): GlobalThemeSpec {
 
 export function Studio({ installed, onSaved }: Props) {
   const [spec, setSpec] = useState<GlobalThemeSpec | null>(null);
-  const [tab, setTab] = useState<TabId>("gtk");
+  const [tab, setTab] = useState<TabId>("global");
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
@@ -95,6 +96,8 @@ export function Studio({ installed, onSaved }: Props) {
 
   const current = (id: TabId): string => {
     switch (id) {
+      case "global":
+        return "";
       case "gtk":
         return spec.gtk;
       case "qt":
@@ -149,9 +152,22 @@ export function Studio({ installed, onSaved }: Props) {
         ))}
       </div>
 
-      <div className="studio-current">
-        Current: <strong>{current(tab) || "—"}</strong>
-      </div>
+      {tab !== "global" && (
+        <div className="studio-current">
+          Current: <strong>{current(tab) || "—"}</strong>
+        </div>
+      )}
+
+      {tab === "global" && (
+        <div className="studio-grid">
+          {TABS.filter((t) => t.id !== "global").map((t) => (
+            <button key={t.id} className="studio-option" onClick={() => setTab(t.id)}>
+              <span className="studio-option-name">{t.label}</span>
+              <span className="studio-option-val">{current(t.id) || "—"}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {tab === "gtk" && (
         <PickList

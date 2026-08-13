@@ -71,7 +71,6 @@ export default function App() {
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
 
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
   const mainRef = useRef<HTMLDivElement | null>(null);
 
   // Persist installed + favorites (full theme objects, not just ids).
@@ -138,21 +137,19 @@ export default function App() {
     loadMoreRef.current = loadMore;
   });
 
-  // Infinite scroll (browse only) — observe against the real scroll container.
+  // Infinite scroll (browse only) — scroll listener on the content container.
   useEffect(() => {
     if (view !== "browse") return;
     const scrollEl = mainRef.current?.querySelector(".content") as HTMLElement | null;
-    const el = sentinelRef.current;
-    if (!el || !scrollEl) return;
-    const obs = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) loadMoreRef.current();
-      },
-      { root: scrollEl, rootMargin: "600px" }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [view]);
+    if (!scrollEl) return;
+    const onScroll = () => {
+      if (scrollEl.scrollTop + scrollEl.clientHeight >= scrollEl.scrollHeight - 400) {
+        loadMoreRef.current();
+      }
+    };
+    scrollEl.addEventListener("scroll", onScroll, { passive: true });
+    return () => scrollEl.removeEventListener("scroll", onScroll);
+  }, [view, category, query, sort]);
 
   const toggleInstall = (t: Theme) => {
     setInstalled((prev) => {
@@ -312,7 +309,7 @@ export default function App() {
               {!loading && themes.length === 0 && (
                 <div className="empty">No themes found.</div>
               )}
-              <div ref={sentinelRef} className="load-more">
+              <div className="load-more">
                 {loading && themes.length > 0 && (
                   <span className="hint">Loading more…</span>
                 )}
